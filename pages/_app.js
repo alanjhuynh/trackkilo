@@ -1,4 +1,3 @@
-import '../css/style.css';
 import '../css/form.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import Head from 'next/head';

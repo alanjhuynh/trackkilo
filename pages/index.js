@@ -47,7 +47,6 @@ const Index = ({ lifts }) => {
 
 /* Retrieves lift(s) data from mongodb database */
 export async function getServerSideProps() {
-  console.log('get server side props');
   await dbConnect()
 
   /* find all the data in our database */
