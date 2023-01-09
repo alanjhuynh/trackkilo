@@ -2,9 +2,12 @@ import Link from 'next/link'
 import dbConnect from '../lib/dbConnect'
 import Lift from '../models/Lift'
 import { useRouter } from 'next/router'
+import { useSession, getSession } from 'next-auth/react';
 
 const Index = ({ lifts }) => {
-  const router = useRouter()
+  const router = useRouter();
+  const { data: session, status } = useSession({required: true});
+
   const handleDelete = async (liftId) => {
     try {
       await fetch(`/api/lifts/${liftId}`, {
@@ -16,41 +19,53 @@ const Index = ({ lifts }) => {
       console.log('Failed to delete the lift.')
     }
   }
-  
-  return (
-  <>
-    {/* Create a card for each lift */}
-    {lifts.map((lift) => (
-      <div className="d-flex justify-content-center my-2" key={lift._id}>
-        <div className="card w-50">
-          <h5 className="lift-name">{lift.name}</h5>
-          <div className="main-content">
-            <p className="lift-name">{lift.name}</p>
-            <p className="lift-set">{lift.set}</p>
-            <p className="lift-rep">{lift.rep}</p>
-            <p className="lift-weight">{lift.weight} {lift.metric}</p>
-            <p className="lift-note">{lift.note}</p>
-            <p className="lift-date">{lift.date}</p>
 
-            <div>
-              <Link href="/[id]/edit" as={`/${lift._id}/edit`} legacyBehavior>
-                <button className="btn edit">Edit</button>
-              </Link>
-              <button className="btn delete" onClick={()=>{handleDelete(lift._id)}}>Delete</button>
+  if (status === 'authenticated'){
+    return (
+      <>
+        {/* Create a card for each lift */}
+        {lifts.map((lift) => (
+          <div className="d-flex justify-content-center my-2" key={lift._id}>
+            <div className="card w-50">
+              <h5 className="lift-name">{lift.name}</h5>
+              <div className="main-content">
+                <p className="lift-name">{lift.name}</p>
+                <p className="lift-set">{lift.set}</p>
+                <p className="lift-rep">{lift.rep}</p>
+                <p className="lift-weight">{lift.weight} {lift.metric}</p>
+                <p className="lift-note">{lift.note}</p>
+                <p className="lift-date">{lift.date}</p>
+    
+                <div>
+                  <Link href="/[id]/edit" as={`/${lift._id}/edit`} legacyBehavior>
+                    <button className="btn edit">Edit</button>
+                  </Link>
+                  <button className="btn delete" onClick={()=>{handleDelete(lift._id)}}>Delete</button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    ))}
-  </>
-)}
+        ))}
+      </>
+    )
+  } 
+}
 
 /* Retrieves lift(s) data from mongodb database */
-export async function getServerSideProps() {
+export async function getServerSideProps(context) {
+  const session = await getSession(context);
+  if(!session) {
+    return {
+      redirect: {
+        destination: '/login',
+      }
+    }
+  }
+
   await dbConnect()
 
   /* find all the data in our database */
-  const result = await Lift.find({})
+  const result = await Lift.find({userId: session.userId})
   const lifts = result.map((doc) => {
     const lift = doc.toObject()
     lift._id = lift._id.toString()
