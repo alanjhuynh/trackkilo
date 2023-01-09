@@ -2,10 +2,12 @@ import '../css/form.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import Head from 'next/head';
 import Link from 'next/link';
+import {SessionProvider} from 'next-auth/react'
+import { signOut } from 'next-auth/react';
 
-function App({ Component, pageProps }) {
+function App({ Component, pageProps, session }) {
   return (
-    <>
+    <SessionProvider session={session}>
       <Head>
         <title>track kilo</title>
       </Head>
@@ -15,13 +17,14 @@ function App({ Component, pageProps }) {
         <div>
           <Link href="/" className="mx-2">Home</Link>
           <Link href="/new">Add Lift</Link>
+          <a onClick={() => signOut()}>Sign Out</a>
         </div>
       </div>
 
       <div className="grid wrapper">
         <Component {...pageProps} />
       </div>
-    </>
+    </SessionProvider>
   )
 } 
 
