@@ -9,6 +9,7 @@ const Form = ({ formId, liftForm, isNew = true }) => {
   const [message, setMessage] = useState('')
 
   const [form, setForm] = useState({
+    userId: liftForm.userId,
     name: liftForm.name,
     set: liftForm.set,
     rep: liftForm.rep,

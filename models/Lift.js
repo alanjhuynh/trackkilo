@@ -2,7 +2,9 @@ import mongoose from 'mongoose'
 
 const LiftSchema = new mongoose.Schema({
   userId: {
-    type: Number,
+    type: String,
+    unique: true,
+    required: true
   },
   name: {
     type: String,
