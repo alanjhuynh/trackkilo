@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "@next-auth/mongodb-adapter": "^1.1.1",
+    "@popperjs/core": "^2.11.6",
     "bcryptjs": "^2.4.3",
     "bootstrap": "^5.2.3",
     "mongodb": "^4.13.0",
