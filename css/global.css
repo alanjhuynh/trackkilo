@@ -1,0 +1,9 @@
+@import "form.css";
+
+.profile-pic {
+    height: 36px;
+    width: 36px;
+}
+.profile-pic:hover {
+    cursor: pointer;
+}
