@@ -4,11 +4,6 @@ import { useSession, signOut } from 'next-auth/react';
 function Navbar() {
     const {data: session } = useSession();
 
-    //TODO: update
-    if (!session)
-        return (
-            <div>loading</div>
-        )
     return (
         <nav className="navbar navbar-dark bg-dark">
             <div className="d-flex justify-content-between align-items-center w-100 mx-5">
@@ -17,7 +12,7 @@ function Navbar() {
                 </Link>
                 <div className="dropdown">
                     <a data-bs-toggle="dropdown">
-                        <img className="rounded-circle profile-pic" src={session.user.image ? session.user.image : "user.svg"}></img>
+                        <img className="rounded-circle profile-pic" src={session?.user?.image ? session.user.image : "user.svg"}></img>
                     </a>
                     <div className="dropdown-menu dropdown-menu-end">
                         <button onClick={() => signOut()} className="dropdown-item" type="button">Sign Out</button>
