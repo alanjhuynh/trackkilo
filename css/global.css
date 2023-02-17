@@ -7,3 +7,30 @@
 .profile-pic:hover {
     cursor: pointer;
 }
+
+.svg-icon {
+    height: 16px;
+    width: 16px;
+}
+
+.navbar {
+    height: 64px;
+}
+ 
+.main {
+    height: calc(100vh - 64px); 
+}
+
+.bg-dark-2 {
+    background-color: rgb(18,18,18);
+}
+
+.bg-primary-2 {
+    background-color: rgb(59,113,159) !important;
+}
+
+.flex-center {
+    display: flex;
+    align-items: center !important;
+    justify-content: center !important;
+}

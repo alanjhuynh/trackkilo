@@ -25,8 +25,8 @@ const Index = ({ lifts }) => {
       <>
         {/* Create a card for each lift */}
         {lifts.map((lift) => (
-          <div className="d-flex justify-content-center my-2" key={lift._id}>
-            <div className="card w-50">
+          <div className="d-flex justify-content-center mt-4 my-2" key={lift._id}>
+            <div className="card bg-dark text-white w-50">
               <h5 className="lift-name">{lift.name}</h5>
               <div className="main-content">
                 <p className="lift-name">{lift.name}</p>
@@ -38,9 +38,9 @@ const Index = ({ lifts }) => {
     
                 <div>
                   <Link href="/[id]/edit" as={`/${lift._id}/edit`} legacyBehavior>
-                    <button className="btn edit">Edit</button>
+                    <button className="btn edit text-white">Edit</button>
                   </Link>
-                  <button className="btn delete" onClick={()=>{handleDelete(lift._id)}}>Delete</button>
+                  <button className="btn delete text-white" onClick={()=>{handleDelete(lift._id)}}>Delete</button>
                 </div>
               </div>
             </div>
