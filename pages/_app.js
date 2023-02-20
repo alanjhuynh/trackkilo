@@ -8,10 +8,10 @@ import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
 import { useEffect } from "react";
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faPenToSquare, faFloppyDisk } from '@fortawesome/free-regular-svg-icons';
+import { faPenToSquare, faFloppyDisk, faCalendar } from '@fortawesome/free-regular-svg-icons';
 import { faX } from '@fortawesome/free-solid-svg-icons';
 
-library.add(faPenToSquare, faFloppyDisk, faX);
+library.add(faPenToSquare, faFloppyDisk, faCalendar, faX);
 
 function App({ Component, pageProps, session }) {
   useEffect(() => {

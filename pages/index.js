@@ -4,6 +4,7 @@ import Lift from '../models/Lift'
 import { useRouter } from 'next/router'
 import { useSession, getSession } from 'next-auth/react';
 import Card from '../components/Card';
+import { chunk } from 'lodash';
 
 const Index = ({ lifts }) => {
   const router = useRouter();
@@ -21,37 +22,23 @@ const Index = ({ lifts }) => {
     }
   }
 
+  let targetLifts = chunk(lifts, 3);
+  console.log(targetLifts);
+
   if (status === 'authenticated'){
     return (
-      <>
+      <div className="my-4 mx-5">
         {/* Create a card for each lift */}
-        {lifts.map((lift) => (
-          <div key={lift._id}>
-            {/* <div className="d-flex justify-content-center mt-4 my-2" key={lift._id}>
-            <div className="card bg-dark text-white w-50">
-              <h5 className="lift-name">{lift.name}</h5>
-              <div className="main-content">
-                <p className="lift-name">{lift.name}</p>
-                <p className="lift-set">{lift.set}</p>
-                <p className="lift-rep">{lift.rep}</p>
-                <p className="lift-weight">{lift.weight} {lift.metric}</p>
-                <p className="lift-note">{lift.note}</p>
-                <p className="lift-date">{lift.date}</p>
-    
-                <div>
-                  <Link href="/[id]/edit" as={`/${lift._id}/edit`} legacyBehavior>
-                    <button className="btn edit text-white">Edit</button>
-                  </Link>
-                  <button className="btn delete text-white" onClick={()=>{handleDelete(lift._id)}}>Delete</button>
-                </div>
+        {targetLifts.map((lifts) => (
+          <div className="row">
+            {lifts.map((lift) => (
+              <div className="col">
+                <Card lift={lift} isNew={false}></Card>
               </div>
-            </div>
-          </div> */}
-          <Card lift={lift}></Card>
-
+            ))}
           </div>
         ))}
-      </>
+      </div>
     )
   } 
 }

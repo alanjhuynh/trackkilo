@@ -1,11 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 export const MAX_SET_COUNT = 100;
 
-const Card = ({ lift }) => {
+const Card = ({ lift, isNew = true }) => {
     const [editMode, setEditMode] = useState(false);
     const [setCount, setSetCount] = useState(0)
+
+    const [liftForm, setLiftForm] = useState({
+        userId: lift.userId,
+        name: lift.name,
+        set: lift.set,
+        rep: lift.rep,
+        weight: lift.weight,
+        metric: lift.metric,
+        note: lift.note,
+        date: lift.date,
+      })
+
+      useEffect(() => {
+        if (isNew)
+            setEditMode(true);
+      }, []);
 
     function toggleEditMode(){
         setEditMode(!editMode);
@@ -27,7 +43,7 @@ const Card = ({ lift }) => {
     if (editMode) {
         return (
             <>
-                <div className="card bg-dark w-25">
+                <div className="card bg-dark">
                     <div className="card-body">
                         <div className = "flex-between-center my-2">
                             <input 
@@ -36,24 +52,32 @@ const Card = ({ lift }) => {
                             ></input>
                             <a className="edit-icon " onClick={() => toggleEditMode()}>Save</a>
                         </div>
-                        <div className="d-flex align-items-center mb-2">
-                            <input 
-                                className="bg-dark w-25"
-                                type="number"
-                                name="set"
-                                placeholder="Set"
-                                onBlur={handleSetChange}
-                            ></input>
-                            <FontAwesomeIcon className="mx-2" icon="fa-solid fa-x" />
-                            <input 
-                                className="bg-dark w-25"
-                                placeholder="Rep"
-                            ></input>
+                        <div className="flex-between-center mb-2">
+                            <div className="d-flex align-items-center">
+                                <input 
+                                    className="bg-dark w-25"
+                                    type="number"
+                                    name="set"
+                                    placeholder="Set"
+                                    onBlur={handleSetChange}
+                                ></input>
+                                <FontAwesomeIcon className="mx-2" icon="fa-solid fa-x" />
+                                <input 
+                                    className="bg-dark w-25"
+                                    placeholder="Rep"
+                                ></input>
+                            </div>
+                            <div>
+                                <input 
+                                    className="bg-dark"
+                                    type="date"
+                                ></input>
+                            </div>
                         </div>
                         {Array.from({ length: setCount }).map((e, i) => (
-                            <div className="row mb-1">
+                            <div key={i} className="row mb-1">
                                 <div className="col-2 d-flex align-items-center">
-                                    <div key={i} className="bg-dark-2 profile-pic rounded-circle flex-center">{i+1}</div>
+                                    <div className="bg-dark-2 profile-pic rounded-circle flex-center">{i+1}</div>
                                 </div>
                                 <div className="col-5 d-flex align-items-center">
                                     <input 
@@ -88,7 +112,7 @@ const Card = ({ lift }) => {
     else {
         return (
             <>
-                <div className="card bg-dark w-25">
+                <div className="card bg-dark">
                     <div className="card-body">
                         <div className="flex-between-center">
                             <h5 className="card-title">
