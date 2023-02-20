@@ -3,6 +3,7 @@ import dbConnect from '../lib/dbConnect'
 import Lift from '../models/Lift'
 import { useRouter } from 'next/router'
 import { useSession, getSession } from 'next-auth/react';
+import Card from '../components/Card';
 
 const Index = ({ lifts }) => {
   const router = useRouter();
@@ -25,7 +26,8 @@ const Index = ({ lifts }) => {
       <>
         {/* Create a card for each lift */}
         {lifts.map((lift) => (
-          <div className="d-flex justify-content-center mt-4 my-2" key={lift._id}>
+          <div key={lift._id}>
+            {/* <div className="d-flex justify-content-center mt-4 my-2" key={lift._id}>
             <div className="card bg-dark text-white w-50">
               <h5 className="lift-name">{lift.name}</h5>
               <div className="main-content">
@@ -44,6 +46,9 @@ const Index = ({ lifts }) => {
                 </div>
               </div>
             </div>
+          </div> */}
+          <Card lift={lift}></Card>
+
           </div>
         ))}
       </>
