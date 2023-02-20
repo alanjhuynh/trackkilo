@@ -9,9 +9,9 @@ import Sidebar from '../components/Sidebar';
 import { useEffect } from "react";
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { faPenToSquare, faFloppyDisk, faCalendar } from '@fortawesome/free-regular-svg-icons';
-import { faX } from '@fortawesome/free-solid-svg-icons';
+import { faX, faHouse, faChartLine } from '@fortawesome/free-solid-svg-icons';
 
-library.add(faPenToSquare, faFloppyDisk, faCalendar, faX);
+library.add(faPenToSquare, faFloppyDisk, faCalendar, faX, faHouse, faChartLine);
 
 function App({ Component, pageProps, session }) {
   useEffect(() => {

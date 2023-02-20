@@ -23,7 +23,6 @@ const Index = ({ lifts }) => {
   }
 
   let targetLifts = chunk(lifts, 3);
-  console.log(targetLifts);
 
   if (status === 'authenticated'){
     return (
