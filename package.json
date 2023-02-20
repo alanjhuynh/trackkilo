@@ -6,10 +6,15 @@
     "start": "next start"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.3.0",
+    "@fortawesome/free-regular-svg-icons": "^6.3.0",
+    "@fortawesome/free-solid-svg-icons": "^6.3.0",
+    "@fortawesome/react-fontawesome": "^0.2.0",
     "@next-auth/mongodb-adapter": "^1.1.1",
     "@popperjs/core": "^2.11.6",
     "bcryptjs": "^2.4.3",
     "bootstrap": "^5.2.3",
+    "lodash": "^4.17.21",
     "mongodb": "^4.13.0",
     "mongoose": "^6.8.0",
     "next": "latest",
