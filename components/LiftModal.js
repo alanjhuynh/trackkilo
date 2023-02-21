@@ -138,6 +138,7 @@ const LiftModal = ({ lift }) => {
   //TODO: factor out base component for card and modal
     return (
         <>
+        {/* TODO: move button up to parent */}
         <Button className="bg-primary-2 border-dark " onClick={handleShow}>
             New Lift
         </Button>
