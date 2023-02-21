@@ -3,7 +3,6 @@ import mongoose from 'mongoose'
 const LiftSchema = new mongoose.Schema({
   userId: {
     type: String,
-    unique: true,
     required: true
   },
   name: {
@@ -17,13 +16,6 @@ const LiftSchema = new mongoose.Schema({
   rep: {
     type: Number,
     required: true
-  },
-  weight: {
-    type: Number,
-    required: true
-  },
-  metric: {
-    type: String
   },
   note: {
     type: String
