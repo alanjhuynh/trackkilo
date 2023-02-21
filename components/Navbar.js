@@ -5,9 +5,9 @@ function Navbar() {
     const {data: session } = useSession();
 
     return (
-        <nav className="navbar navbar-dark bg-dark">
-            <div className="d-flex justify-content-between align-items-center w-100 mx-5">
-                <Link href="/" className="text-white text-decoration-none">
+        <nav className="navbar navbar-dark bg-dark sticky-top">
+            <div className="flex-between-center w-100 mx-5">
+                <Link href="/" className="nav-link">
                     <h2>track<span className="text-muted">kilo</span></h2>
                 </Link>
                 <div className="dropdown">

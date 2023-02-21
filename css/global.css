@@ -1,5 +1,20 @@
 @import "form.css";
 
+/* default dark mode */
+div, h1, h2, h3, h4, h5, h6, p, a, a:hover, .nav-link, .nav-link:hover {
+    color: white;
+}
+
+input, select {
+    color-scheme: dark;
+    color: white;
+    border-color: white;
+}
+
+a, .nav-link {
+    text-decoration: none;
+}
+
 .profile-pic {
     height: 36px;
     width: 36px;
@@ -21,6 +36,18 @@
     height: calc(100vh - 64px); 
 }
 
+.modal-content {
+    background-color: #212529;
+}
+
+.modal-header {
+    border-bottom: 0 none;
+}
+
+.modal-footer {
+    border-top: 0 none;
+}
+
 .bg-dark-2 {
     background-color: rgb(18,18,18);
 }
@@ -33,4 +60,28 @@
     display: flex;
     align-items: center !important;
     justify-content: center !important;
+}
+
+.flex-between-center {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+.edit-icon {
+    cursor: pointer;
+}
+
+.weight-input {
+    border-radius: 10px 0px 0px 10px;
+    border-right: none;
+}
+
+.metric-input {
+    border-radius: 0px 10px 10px 0px;
+    border-left: none;
+}
+
+.card {
+    height: 200px;
 }
