@@ -3,13 +3,11 @@
 /* default dark mode */
 div, h1, h2, h3, h4, h5, h6, p, a, a:hover, .nav-link, .nav-link:hover {
     color: white;
-    caret-color: transparent;
 }
 
 input, select {
     color-scheme: dark;
     color: white;
-    caret-color: white;
     border-color: white;
 }
 
