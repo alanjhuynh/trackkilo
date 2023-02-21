@@ -5,6 +5,7 @@ import { useRouter } from 'next/router'
 import { useSession, getSession } from 'next-auth/react';
 import Card from '../components/Card';
 import { chunk } from 'lodash';
+import Subheader from '../components/Subheader';
 
 const Index = ({ lifts }) => {
   const router = useRouter();
@@ -27,11 +28,12 @@ const Index = ({ lifts }) => {
   if (status === 'authenticated'){
     return (
       <div className="my-4 mx-5">
+        <Subheader></Subheader>
         {/* Create a card for each lift */}
-        {targetLifts.map((lifts) => (
-          <div className="row">
+        {targetLifts.map((lifts, i) => (
+          <div key={i} className="row mb-4">
             {lifts.map((lift) => (
-              <div className="col">
+              <div key={lift._id} className="col">
                 <Card lift={lift} isNew={false}></Card>
               </div>
             ))}
