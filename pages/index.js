@@ -1,13 +1,14 @@
 import Link from 'next/link'
 import dbConnect from '../lib/dbConnect'
 import Lift from '../models/Lift'
+import Set from '../models/Set';
 import { useRouter } from 'next/router'
 import { useSession, getSession } from 'next-auth/react';
 import Card from '../components/Card';
-import { chunk } from 'lodash';
+import { chunk, cloneDeep, each, set } from 'lodash';
 import Subheader from '../components/Subheader';
 
-const Index = ({ lifts }) => {
+const Index = ({ lifts, sets }) => {
   const router = useRouter();
   const { data: session, status } = useSession({required: true});
 
@@ -58,15 +59,33 @@ export async function getServerSideProps(context) {
   await dbConnect()
 
   /* find all the data in our database */
-  const result = await Lift.find({userId: session.userId})
-  const lifts = result.map((doc) => {
+  let result = await Lift.find({userId: session.userId})
+  let lifts = result.map((doc) => {
     const lift = doc.toObject()
     lift._id = lift._id.toString()
     lift.date = lift.date.toString()
     return lift
   })
 
-  return { props: { lifts: lifts } }
+  for (let i = 0; i < lifts.length; i++){
+    let result = await Set.find({
+      liftId: lifts[i]._id,
+      userId: session.userId,
+    });
+    let sets = result.map((doc) => {
+      const set = doc.toObject();
+      set._id = set._id.toString();
+      return set;
+    })
+
+    let targetSets = {};
+    each(sets, (set) => {
+      targetSets[set.index] = set;
+    })
+    lifts[i].sets = targetSets;    
+  }
+
+  return { props: { lifts: lifts} }
 }
 
 export default Index

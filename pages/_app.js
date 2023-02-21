@@ -21,7 +21,7 @@ function App({ Component, pageProps, session }) {
   return (
     <SessionProvider session={session}>
       
-
+      {/* TODO: move inside index */}
       <Navbar></Navbar>
       <div className="main row mx-0">
         <div className="col-2 p-0">
