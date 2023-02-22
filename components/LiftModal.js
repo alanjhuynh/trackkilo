@@ -122,12 +122,9 @@ const LiftModal = ({ lift }) => {
   }
 
   const handleSubmit = (e) => {
-    console.log('handle submit');
     e.preventDefault()
     const errs = formValidate()
     if (Object.keys(errs).length === 0) {
-        console.log(liftForm);
-        console.log(setForm);
         postData({liftForm, setForm})
     } else {
         console.log(errs);  
