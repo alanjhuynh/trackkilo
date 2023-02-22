@@ -120,9 +120,20 @@ const Card = ({ lift, isNew = true }) => {
                             </h5>
                             <a className="edit-icon" onClick={() => toggleEditMode()}><FontAwesomeIcon icon="fa-regular fa-pen-to-square"/></a>
                         </div>
-                        <h6 className="card-subtitle mb-2 text-muted">Card subtitle</h6>
-                        <div className="bg-dark-2 profile-pic rounded-circle flex-center">{lift.set}</div>
-                        <div>{lift.weight}</div>
+                        <h6 className="card-subtitle mb-2 text-muted">{lift.set} sets x {lift.rep} reps </h6>
+                        {Object.entries(lift.sets).map(([key, set]) => (
+                            <div key={key} className="row mb-1">
+                                <div className="col-2 d-flex align-items-center">
+                                    <div className="bg-dark-2 profile-pic rounded-circle flex-center">{set.index}</div>
+                                </div>
+                                <div className="col-5 flex-center">
+                                    <h6>{set.weight} {set.metric}</h6>
+                                </div>  
+                                <div className="col-5 flex-center">
+                                    <h6>{set.rep} reps @ RPE {set.rpe}</h6>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </>
