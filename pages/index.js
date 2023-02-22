@@ -31,7 +31,7 @@ const Index = ({ lifts, sets }) => {
         {/* Create a card for each lift */}
         <div className="row">
           {lifts.map((lift) => (
-            <div key={lift._id} className="col-4 g-3">
+            <div key={lift._id} className="col-sm-4 g-3">
               <Card lift={lift} isNew={false}></Card>
             </div>
           ))}

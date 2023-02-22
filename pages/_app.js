@@ -24,10 +24,10 @@ function App({ Component, pageProps, session }) {
       {/* TODO: move inside index */}
       <Navbar></Navbar>
       <div className="main row mx-0">
-        <div className="col-2 p-0">
+        <div className="d-none d-sm-block col-sm-2 p-0">
           <Sidebar></Sidebar>
         </div>
-        <div className="col-10 p-0 bg-dark-2">
+        <div className="col col-sm-10 p-0 bg-dark-2">
           <Component {...pageProps} />
         </div>
       </div>
