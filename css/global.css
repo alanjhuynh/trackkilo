@@ -15,6 +15,27 @@ a, .nav-link {
     text-decoration: none;
 }
 
+::-webkit-scrollbar {
+    width: 17px;
+}
+
+::-webkit-scrollbar-track {
+    background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: rgb(18,18,18);
+    border-radius: 20px;
+    border: 6px solid transparent;
+    background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(59,113,159);
+}
+
+
+
 .profile-pic {
     height: 36px;
     width: 36px;
@@ -83,5 +104,5 @@ a, .nav-link {
 }
 
 .card {
-    height: 200px;
+    height: 210px;
 }

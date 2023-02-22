@@ -113,7 +113,7 @@ const Card = ({ lift, isNew = true }) => {
         return (
             <>
                 <div className="card bg-dark">
-                    <div className="card-body">
+                    <div className="card-body overflow-auto">
                         <div className="flex-between-center">
                             <h5 className="card-title">
                                 {lift.name}
