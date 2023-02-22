@@ -24,22 +24,18 @@ const Index = ({ lifts, sets }) => {
     }
   }
 
-  let targetLifts = chunk(lifts, 3);
-
   if (status === 'authenticated'){
     return (
       <div className="my-4 mx-5">
         <Subheader></Subheader>
         {/* Create a card for each lift */}
-        {targetLifts.map((lifts, i) => (
-          <div key={i} className="row mb-4">
-            {lifts.map((lift) => (
-              <div key={lift._id} className="col">
-                <Card lift={lift} isNew={false}></Card>
-              </div>
-            ))}
-          </div>
-        ))}
+        <div className="row">
+          {lifts.map((lift) => (
+            <div key={lift._id} className="col-4 g-3">
+              <Card lift={lift} isNew={false}></Card>
+            </div>
+          ))}
+        </div>
       </div>
     )
   } 
