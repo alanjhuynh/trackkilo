@@ -2,6 +2,7 @@ import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useEffect, useState } from 'react';
+import { each, toNumber } from 'lodash';
 
 export const MAX_SET_COUNT = 100;
 
@@ -13,17 +14,20 @@ const LiftModal = ({ lift }) => {
     const handleClose = () => {
         setShow(false);
         setSetCount(0);
+        setSetForm({});
+        setLiftForm(initialLiftForm);
     };
     const handleShow = () => setShow(true);
 
-    const [liftForm, setLiftForm] = useState({
+    const initialLiftForm = {
         userId: lift.userId,
         name: lift.name,
         set: lift.set,
         rep: lift.rep,
         note: lift.note,
         date: lift.date,
-    });
+    };
+    const [liftForm, setLiftForm] = useState(initialLiftForm);
     const [setCount, setSetCount] = useState(0);
     const [setForm, setSetForm] = useState({});
 
@@ -49,26 +53,26 @@ const LiftModal = ({ lift }) => {
     //TODO: move to liftmanager
     /* The POST method adds a new entry in the mongodb database. */
   const postData = async (form) => {
-    try {
-      const res = await fetch('/api/lifts', {
-        method: 'POST',
-        headers: {
-          Accept: contentType,
-          'Content-Type': contentType,
-        },
-        body: JSON.stringify(form),
-      })
+        try {
+        const res = await fetch('/api/lifts', {
+            method: 'POST',
+            headers: {
+            Accept: contentType,
+            'Content-Type': contentType,
+            },
+            body: JSON.stringify(form),
+        })
 
-      // Throw error with status code in case Fetch API req failed
-      if (!res.ok) {
-        throw new Error(res.status);
-      }
-      else
-        handleClose();
-    } catch (error) {
-      console.log('Failed to add lift');
+        // Throw error with status code in case Fetch API req failed
+        if (!res.ok) {
+            throw new Error(res.status);
+        }
+        else
+            handleClose();
+        } catch (error) {
+        console.log('Failed to add lift');
+        }
     }
-  }
 
   const setLift = (e) => {
     const target = e.target
