@@ -77,6 +77,10 @@ a, .nav-link {
     background-color: rgb(59,113,159) !important;
 }
 
+.bg-danger-2 {
+   background-color: rgb(166,65,65);
+}
+
 .flex-center {
     display: flex;
     align-items: center !important;
