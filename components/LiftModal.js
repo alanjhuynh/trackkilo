@@ -33,20 +33,16 @@ const LiftModal = ({ lift }) => {
         let name = target.name
 
         if (name == 'set'){
+            // if reducing the amount of sets, delete the extra sets
+            if (value < setCount)
+            for (let i = setCount; i > value; i--){
+                delete setForm[i];
+            }
+            
             if (value > 100)
                 setSetCount(MAX_SET_COUNT);
             else
-                setSetCount(value); 
-        }
-    }
-
-    //TODO: autofill reps
-    function handleRepChange(e){
-        let target = e.target
-        let value = target.value
-        let name = target.name
-
-        if (name == 'rep'){
+                setSetCount(toNumber(value));
         }
     }
 
