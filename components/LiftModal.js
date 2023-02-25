@@ -1,8 +1,9 @@
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useEffect, useState } from 'react';
-import { each, toNumber } from 'lodash';
+import { useContext, useEffect, useState } from 'react';
+import { cloneDeep, each, toNumber } from 'lodash';
+import { LiftContext } from './LiftProvider';
 
 export const MAX_SET_COUNT = 100;
 
@@ -10,6 +11,7 @@ const LiftModal = ({ lift }) => {
     const contentType = 'application/json';
     const [errors, setErrors] = useState({});
     const [show, setShow] = useState(false);
+    const [state, setState] = useContext(LiftContext);
 
     const handleClose = () => {
         setShow(false);
@@ -63,11 +65,20 @@ const LiftModal = ({ lift }) => {
             body: JSON.stringify(form),
         })
 
-        // Throw error with status code in case Fetch API req failed
-        if (!res.ok) {
-            throw new Error(res.status);
+        const data = await res.json();
+
+        //Throw error with status code in case Fetch API req failed
+        if (!data.success) {
+            throw new Error();
         }
+        let targetLift = data.data.lift;
+        targetLift.sets = data.data.sets;
   
+        let targetLifts = cloneDeep(state);
+        targetLifts.push(targetLift);
+
+        setState(targetLifts);
+       
         handleClose();
         } catch (error) {
         console.log('Failed to add lift');
