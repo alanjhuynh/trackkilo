@@ -3,6 +3,7 @@ import '../css/global.css';
 import Head from 'next/head';
 import Link from 'next/link';
 import {SessionProvider} from 'next-auth/react'
+import { LiftProvider } from '../components/LiftProvider';
 import { signOut } from 'next-auth/react';
 import Navbar from '../components/Navbar';
 import Sidebar from '../components/Sidebar';
@@ -26,7 +27,9 @@ function App({ Component, pageProps, session }) {
       
       <Navbar></Navbar>
       <div className="main row mx-0 bg-dark-2 overflow-auto">
-        <Component {...pageProps} />
+        <LiftProvider>
+          <Component {...pageProps} />
+        </LiftProvider>
       </div>
     
     </SessionProvider>

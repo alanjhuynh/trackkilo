@@ -9,15 +9,21 @@ import { chunk, cloneDeep, each, isEmpty, set } from 'lodash';
 import Subheader from '../components/Subheader';
 import Sidebar from '../components/Sidebar';
 import { FontAwesomeIcon } from '../node_modules/@fortawesome/react-fontawesome/index';
+import { LiftContext, LiftProvider } from '../components/LiftProvider';
+import { useContext, useEffect } from 'react';
 
 const Index = ({ lifts, sets }) => {
   const router = useRouter();
   const { data: session, status } = useSession({required: true});
+  const [state, setState] = useContext(LiftContext);
 
+  useEffect(() => {
+    setState(lifts)
+  }, []);
 
-  lifts.sort((a, b) => new Date(b.date) - new Date(a.date));
+  state.sort((a, b) => new Date(b.date) - new Date(a.date));
   
-  let liftsByDate = lifts.reduce((group, lift) => {
+  let liftsByDate = state.reduce((group, lift) => {
     let date = new Date(lift.date).toISOString().substring(0, 10);
     if (!group[date]) {
       group[date] = [];
