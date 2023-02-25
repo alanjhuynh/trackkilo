@@ -14,6 +14,33 @@ const Index = ({ lifts, sets }) => {
   const router = useRouter();
   const { data: session, status } = useSession({required: true});
 
+
+  lifts.sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+  let liftsByDate = lifts.reduce((group, lift) => {
+    let date = new Date(lift.date).toISOString().substring(0, 10);
+    if (!group[date]) {
+      group[date] = [];
+    }
+    group[date].push(lift);
+    return group;
+  }, {});
+
+  let cardsByDate = [];
+  each (liftsByDate, (lifts, date) => {
+    let liftsEl = lifts.map((lift) => (
+      <div key={lift._id} className="col-sm-4 g-2">
+        <Card lift={lift} isNew={ false}></Card>
+      </div>
+    ));
+    cardsByDate.push(
+      <div key={date} className="row mb-5">
+        <h3 className="">{date}</h3>
+        {liftsEl}
+      </div>
+    );
+  })
+
   if (status === 'authenticated'){
     return (
       <>
@@ -24,18 +51,8 @@ const Index = ({ lifts, sets }) => {
           <div className="my-4 mx-5">
             <Subheader></Subheader>
             {/* Create a card for each lift */}
-            <div className="row">
-              {isEmpty(lifts) ? 
-              <div className="flex-center row text-center">
-                <FontAwesomeIcon icon="fa-solid fa-dumbbell" size="10x" />
-                <div><h2>No lifts found</h2></div>
-              </div> 
-              : 
-              lifts.map((lift) => (
-                <div key={lift._id} className="col-sm-4 g-3">
-                  <Card lift={lift} isNew={false}></Card>
-                </div>
-              ))}
+            <div>
+              {cardsByDate}
             </div>
           </div>
         </div>

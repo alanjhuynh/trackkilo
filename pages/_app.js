@@ -25,7 +25,7 @@ function App({ Component, pageProps, session }) {
       </Head>
       
       <Navbar></Navbar>
-      <div className="main row mx-0 bg-dark-2">
+      <div className="main row mx-0 bg-dark-2 overflow-auto">
         <Component {...pageProps} />
       </div>
     
