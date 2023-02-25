@@ -24,7 +24,6 @@ function App({ Component, pageProps, session }) {
         <title>trackkilo</title>
       </Head>
       
-      {/* TODO: move inside index */}
       <Navbar></Navbar>
       <div className="main row mx-0 bg-dark-2">
         <Component {...pageProps} />

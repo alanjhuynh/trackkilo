@@ -24,5 +24,8 @@ export default NextAuth({
         session.userId = user.id;
         return session;
       },
-    }
+    },
+    pages: {
+      signIn: "/login",
+    },
 })
