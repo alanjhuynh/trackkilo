@@ -5,7 +5,10 @@ import { cloneDeep, size, toNumber } from "lodash";
 export const MAX_SET_COUNT = 100;
 
 const Card = ({ lift, isNew = true }) => {
+    const contentType = 'application/json'
     const [editMode, setEditMode] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [message, setMessage] = useState('');
     
     const initialLiftForm = {
         userId: lift.userId,
@@ -214,13 +217,17 @@ const Card = ({ lift, isNew = true }) => {
     else {
         return (
             <>
-                <div className="card bg-dark">
+                <div className={isExpanded ? 'card bg-dark h-100' : 'card bg-dark'}>
                     <div className="card-body overflow-auto">
                         <div className="flex-between-center">
                             <h5 className="card-title">
                                 {lift.name}
                             </h5>
-                            <a className="edit-icon" onClick={() => toggleEditMode()}><FontAwesomeIcon icon="fa-regular fa-pen-to-square"/></a>
+                            <span className="action-items">
+                                {/* TODO: update to check for overflow instead of constant */}
+                                {setCount > 3 && <a onClick={()=>{setIsExpanded(!isExpanded)}}><FontAwesomeIcon icon="fa-solid fa-expand" /></a>}
+                                <a className="ms-3" onClick={() => toggleEditMode()}><FontAwesomeIcon icon="fa-regular fa-pen-to-square"/></a>
+                            </span>
                         </div>
                         <h6 className="card-subtitle mb-2 text-muted">{lift.set} sets x {lift.rep} reps </h6>
                         {Object.entries(lift.sets).map(([key, set]) => (

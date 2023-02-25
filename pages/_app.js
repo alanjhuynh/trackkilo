@@ -9,9 +9,9 @@ import Sidebar from '../components/Sidebar';
 import { useEffect } from "react";
 const { library } = require('@fortawesome/fontawesome-svg-core'); // require fixes hydration error
 import { faPenToSquare, faFloppyDisk, faCalendar } from '@fortawesome/free-regular-svg-icons';
-import { faX, faHouse, faChartLine, faDumbbell, faRocket } from '@fortawesome/free-solid-svg-icons';
+import { faX, faHouse, faChartLine, faDumbbell, faRocket, faExpand } from '@fortawesome/free-solid-svg-icons';
 
-library.add(faPenToSquare, faFloppyDisk, faCalendar, faX, faHouse, faChartLine, faDumbbell, faRocket);
+library.add(faPenToSquare, faFloppyDisk, faCalendar, faX, faHouse, faChartLine, faDumbbell, faRocket, faExpand);
 
 function App({ Component, pageProps, session }) {
   useEffect(() => {
