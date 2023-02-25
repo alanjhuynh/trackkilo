@@ -1,5 +1,3 @@
-@import "form.css";
-
 /* default dark mode */
 div, h1, h2, h3, h4, h5, h6, p, a, a:hover, .nav-link, .nav-link:hover {
     color: white;
