@@ -5,8 +5,10 @@ import Set from '../models/Set';
 import { useRouter } from 'next/router'
 import { useSession, getSession } from 'next-auth/react';
 import Card from '../components/Card';
-import { chunk, cloneDeep, each, set } from 'lodash';
+import { chunk, cloneDeep, each, isEmpty, set } from 'lodash';
 import Subheader from '../components/Subheader';
+import Sidebar from '../components/Sidebar';
+import { FontAwesomeIcon } from '../node_modules/@fortawesome/react-fontawesome/index';
 
 const Index = ({ lifts, sets }) => {
   const router = useRouter();
@@ -26,17 +28,30 @@ const Index = ({ lifts, sets }) => {
 
   if (status === 'authenticated'){
     return (
-      <div className="my-4 mx-5">
-        <Subheader></Subheader>
-        {/* Create a card for each lift */}
-        <div className="row">
-          {lifts.map((lift) => (
-            <div key={lift._id} className="col-sm-4 g-3">
-              <Card lift={lift} isNew={false}></Card>
-            </div>
-          ))}
+      <>
+        <div className="d-none d-sm-block col-sm-2 p-0">
+          <Sidebar></Sidebar>
         </div>
-      </div>
+        <div className="col col-sm-10 p-0 bg-dark-2">
+          <div className="my-4 mx-5">
+            <Subheader></Subheader>
+            {/* Create a card for each lift */}
+            <div className="row">
+              {isEmpty(lifts) ? 
+              <div className="flex-center row text-center">
+                <FontAwesomeIcon icon="fa-solid fa-dumbbell" size="10x" />
+                <div><h2>No lifts found</h2></div>
+              </div> 
+              : 
+              lifts.map((lift) => (
+                <div key={lift._id} className="col-sm-4 g-3">
+                  <Card lift={lift} isNew={false}></Card>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </>
     )
   } 
 }

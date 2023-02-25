@@ -12,7 +12,7 @@ function Navbar() {
                 </Link>
                 <div className="dropdown">
                     <a data-bs-toggle="dropdown">
-                        <img className="rounded-circle profile-pic" src={session?.user?.image ? session.user.image : "user.svg"}></img>
+                        {session && <img className="rounded-circle profile-pic" src={session?.user?.image ? session.user.image : "user.svg"}></img>}
                     </a>
                     <div className="dropdown-menu dropdown-menu-end">
                         <button onClick={() => signOut()} className="dropdown-item" type="button">Sign Out</button>
