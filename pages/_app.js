@@ -20,6 +20,9 @@ function App({ Component, pageProps, session }) {
 
   return (
     <SessionProvider session={session}>
+      <Head>
+        <title>trackkilo</title>
+      </Head>
       
       {/* TODO: move inside index */}
       <Navbar></Navbar>
