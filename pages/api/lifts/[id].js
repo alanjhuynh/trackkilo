@@ -33,8 +33,6 @@ export default async function handler(req, res) {
           res.status(400).json({success: false});
           return;
         }
-        // console.log(req.body.liftForm);
-        // console.log(req.body.setForm)
 
         const lift = await Lift.findByIdAndUpdate(id, req.body.liftForm, {
           new: true,
@@ -46,7 +44,6 @@ export default async function handler(req, res) {
         let sets = {};
         for (let i = 1; i < size(req.body.setForm) + 1; i++) {
           let set = req.body.setForm[i];
-          console.log(set);
           if (session.userId != set.userId)
             return; //continue
 

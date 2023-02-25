@@ -89,7 +89,6 @@ const Card = ({ lift, isNew = true }) => {
         e.preventDefault()
         const errs = formValidate()
         if (Object.keys(errs).length === 0) {
-            console.log(liftForm, setForm);
             putData({liftForm, setForm})
         } else {
             console.log(errs);  
