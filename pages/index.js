@@ -57,9 +57,16 @@ const Index = ({ lifts, sets }) => {
           <div className="my-4 mx-5">
             <Subheader></Subheader>
             {/* Create a card for each lift */}
-            <div>
-              {cardsByDate}
-            </div>
+            {
+            isEmpty(lifts) ? 
+              <div className="flex-center row text-center">
+                <FontAwesomeIcon icon="fa-solid fa-dumbbell" size="10x" />
+                <div><h2>No lifts found</h2></div>
+              </div> 
+              : 
+              cardsByDate
+            }
+
           </div>
         </div>
       </>
