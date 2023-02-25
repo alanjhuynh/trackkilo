@@ -136,7 +136,7 @@ const LiftModal = ({ lift }) => {
     return (
         <>
         {/* TODO: move button up to parent */}
-        <Button className="bg-primary-2 border-dark " onClick={handleShow}>
+        <Button className="bg-primary-2 border-dark" onClick={handleShow}>
             New Lift
         </Button>
 

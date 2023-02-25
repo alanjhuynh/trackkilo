@@ -12,6 +12,11 @@ export default async function handler(req, res) {
   switch (method) {
     case 'GET':
       try {
+        const session = await getSession({req})
+        if (session.userId != req.body){
+          res.status(400).json({success: false});
+          return;
+        }
         const lifts = await Lift.find({}) /* find all the data in our database */
         res.status(200).json({ success: true, data: lifts })
       } catch (error) {

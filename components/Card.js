@@ -36,11 +36,11 @@ const Card = ({ lift, isNew = true }) => {
         setEditMode(false);
     };
 
-    const postDelete = async (form) => {
+    const postDelete = async () => {
         try {
         const res = await fetch(`/api/lifts/${lift._id}`, {
             method: 'DELETE',
-
+            body: lift.userId,
         })
         if (!res.ok) {
             throw new Error(res.status);

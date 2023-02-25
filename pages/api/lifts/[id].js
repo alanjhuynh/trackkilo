@@ -14,17 +14,17 @@ export default async function handler(req, res) {
   await dbConnect()
 
   switch (method) {
-    case 'GET' /* Get a model by its ID */:
-      try {
-        const lift = await Lift.findById(id)
-        if (!lift) {
-          return res.status(400).json({ success: false })
-        }
-        res.status(200).json({ success: true, data: lift })
-      } catch (error) {
-        res.status(400).json({ success: false })
-      }
-      break
+    // case 'GET' /* Get a model by its ID */:
+    //   try {
+    //     const lift = await Lift.findById(id)
+    //     if (!lift) {
+    //       return res.status(400).json({ success: false })
+    //     }
+    //     res.status(200).json({ success: true, data: lift })
+    //   } catch (error) {
+    //     res.status(400).json({ success: false })
+    //   }
+    //   break
 
     case 'PUT' /* Edit a model by its ID */:
       try {
@@ -70,11 +70,11 @@ export default async function handler(req, res) {
     case 'DELETE' /* Delete a model by its ID */:
       try {
         //TODO: DELETE SETS TOO
-        // const session = await getSession({req})
-        // if (session.userId != req.body.liftForm.userId){
-        //   res.status(400).json({success: false});
-        //   return;
-        // }
+        const session = await getSession({req})
+        if (session.userId != req.body){
+          res.status(400).json({success: false});
+          return;
+        }
         const deletedLift = await Lift.deleteOne({ _id: id })
         if (!deletedLift) {
           return res.status(400).json({ success: false })
