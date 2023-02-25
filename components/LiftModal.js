@@ -181,6 +181,7 @@ const LiftModal = ({ lift }) => {
                             type="date"
                             name="date"
                             onChange={setLift}
+                            value={new Date().toISOString().substring(0, 10)}
                             required
                         ></input>
                     </div>
