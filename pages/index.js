@@ -32,6 +32,10 @@ const Index = ({ lifts, sets }) => {
     return group;
   }, {});
 
+  for (let date in liftsByDate) {
+    liftsByDate[date].sort((a, b) => new Date(a.date) - new Date(b.date));
+  }
+
   let cardsByDate = [];
   each (liftsByDate, (lifts, date) => {
     let liftsEl = lifts.map((lift) => (
