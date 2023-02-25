@@ -247,10 +247,10 @@ const Card = ({ lift, isNew = true }) => {
                             </div>
                         ))}
                         <div className="flex-between-center mt-4">
-                            <button className="btn bg-light" onClick={postDelete}>Delete</button>
+                            <button className="btn bg-light text-dark" onClick={postDelete}>Delete</button>
                             <span>
-                                <button className="btn bg-secondary" onClick={onCancel}>Cancel</button>
-                                <button className="btn bg-primary-2 ms-2" onClick={handleSubmit}>Save</button>
+                                <button className="btn bg-secondary text-white" onClick={onCancel}>Cancel</button>
+                                <button className="btn bg-primary-2 ms-2 text-white" onClick={handleSubmit}>Save</button>
                             </span>
                         </div>
                     </div>
