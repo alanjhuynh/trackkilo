@@ -14,18 +14,6 @@ const Index = ({ lifts, sets }) => {
   const router = useRouter();
   const { data: session, status } = useSession({required: true});
 
-  const handleDelete = async (liftId) => {
-    try {
-      await fetch(`/api/lifts/${liftId}`, {
-        method: 'Delete',
-      })
-      router.push('/')
-    } catch (error) {
-      console.log(error)
-      console.log('Failed to delete the lift.')
-    }
-  }
-
   if (status === 'authenticated'){
     return (
       <>
