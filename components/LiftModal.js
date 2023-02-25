@@ -67,8 +67,8 @@ const LiftModal = ({ lift }) => {
         if (!res.ok) {
             throw new Error(res.status);
         }
-        else
-            handleClose();
+  
+        handleClose();
         } catch (error) {
         console.log('Failed to add lift');
         }

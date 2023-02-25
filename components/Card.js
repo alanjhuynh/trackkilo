@@ -53,6 +53,50 @@ const Card = ({ lift, isNew = true }) => {
         }
     }
 
+    const putData = async (form) => {
+        try {
+          const res = await fetch(`/api/lifts/${lift._id}`, {
+            method: 'PUT',
+            headers: {
+              Accept: contentType,
+              'Content-Type': contentType,
+            },
+            body: JSON.stringify(form),
+          })
+    
+          // Throw error with status code in case Fetch API req failed
+          if (!res.ok) {
+            throw new Error(res.status)
+          }
+    
+          const { data } = await res.json()
+          setEditMode(false);
+        } catch (error) {
+          setMessage('Failed to update lift')
+        }
+      }
+    
+
+    const formValidate = () => {
+        let err = {}
+        if (!liftForm.name) err.name = 'Name is required'
+        if (!liftForm.set) err.set = 'Number of sets is required'
+        if (!liftForm.rep) err.rep = 'Number of reps is required'
+        return err
+      }
+    
+      const handleSubmit = (e) => {
+        e.preventDefault()
+        const errs = formValidate()
+        if (Object.keys(errs).length === 0) {
+            console.log(liftForm, setForm);
+            putData({liftForm, setForm})
+        } else {
+            console.log(errs);  
+          setErrors({ errs })
+        }
+      }
+
     function toggleEditMode(){
         setEditMode(!editMode);
     }
@@ -93,6 +137,7 @@ const Card = ({ lift, isNew = true }) => {
             //TODO: build frontend models
             set = {
                 userId: lift.userId,
+                liftId: lift._id,
                 index: index,
                 rep: '',
                 weight: '',
@@ -175,9 +220,9 @@ const Card = ({ lift, isNew = true }) => {
                                         name="weight"
                                         onChange={(e) => {setSet(e, i+1)}}
                                         placeholder="Weight"
-                                        value={setForm[i+1].weight}
+                                        value={setForm[i+1]?.weight || ''}
                                     ></input>
-                                    <select name="metric" onChange={(e) => {setSet(e, i+1)}} value={setForm[i+1].metric} className="metric-input bg-dark text-muted h-75">
+                                    <select name="metric" onChange={(e) => {setSet(e, i+1)}} value={setForm[i+1]?.metric || ''} className="metric-input bg-dark text-muted h-75">
                                         <option value="lb">lb</option>
                                         <option value="kg">kg</option>
                                     </select>
@@ -189,7 +234,7 @@ const Card = ({ lift, isNew = true }) => {
                                         name="rep"
                                         onChange={(e) => {setSet(e, i+1)}}
                                         placeholder="Rep"
-                                        value={setForm[i+1].rep}
+                                        value={setForm[i+1]?.rep || ''}
                                     ></input>
                                     <input 
                                         className="bg-dark h-75"
@@ -197,7 +242,7 @@ const Card = ({ lift, isNew = true }) => {
                                         name="rpe"
                                         onChange={(e) => {setSet(e, i+1)}}
                                         placeholder="RPE"
-                                        value={setForm[i+1].rpe}
+                                        value={setForm[i+1]?.rpe || ''}
                                     ></input>
                                 </div>
                             </div>
@@ -206,7 +251,7 @@ const Card = ({ lift, isNew = true }) => {
                             <button className="btn bg-light" onClick={postDelete}>Delete</button>
                             <span>
                                 <button className="btn bg-secondary" onClick={onCancel}>Cancel</button>
-                                <button className="btn bg-primary-2 ms-2" onClick={() => toggleEditMode()}>Save</button>
+                                <button className="btn bg-primary-2 ms-2" onClick={handleSubmit}>Save</button>
                             </span>
                         </div>
                     </div>
