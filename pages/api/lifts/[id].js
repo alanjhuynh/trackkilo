@@ -45,7 +45,7 @@ export default async function handler(req, res) {
         for (let i = 1; i < size(req.body.setForm) + 1; i++) {
           let set = req.body.setForm[i];
           if (session.userId != set.userId)
-            return; //continue
+            continue;
 
             if (!set._id) {
               set._id = new mongoose.mongo.ObjectId();
@@ -69,17 +69,17 @@ export default async function handler(req, res) {
 
     case 'DELETE' /* Delete a model by its ID */:
       try {
-        //TODO: DELETE SETS TOO
         const session = await getSession({req})
         if (session.userId != req.body){
           res.status(400).json({success: false});
           return;
         }
-        const deletedLift = await Lift.deleteOne({ _id: id })
+        const deletedLift = await Lift.deleteOne({ _id: id });
         if (!deletedLift) {
           return res.status(400).json({ success: false })
         }
-        res.status(200).json({ success: true, data: {} })
+        await Set.deleteMany({liftId: id});
+        res.status(200).json({ success: true, id})
       } catch (error) {
         res.status(400).json({ success: false })
       }

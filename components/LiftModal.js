@@ -64,7 +64,6 @@ const LiftModal = ({ lift }) => {
             },
             body: JSON.stringify(form),
         })
-
         const data = await res.json();
 
         //Throw error with status code in case Fetch API req failed

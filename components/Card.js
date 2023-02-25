@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { cloneDeep, size, toNumber } from "lodash";
+import { cloneDeep, findIndex, size, toNumber } from "lodash";
+import { LiftContext } from "./LiftProvider";
 
 export const MAX_SET_COUNT = 100;
 
@@ -9,6 +10,7 @@ const Card = ({ lift, isNew = true }) => {
     const [editMode, setEditMode] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [message, setMessage] = useState('');
+    const [state, setState] = useContext(LiftContext);
     
     const initialLiftForm = {
         userId: lift.userId,
@@ -36,18 +38,24 @@ const Card = ({ lift, isNew = true }) => {
         setEditMode(false);
     };
 
-    const postDelete = async () => {
+    //TODO: add confirmation
+    const deleteLift = async () => {
         try {
         const res = await fetch(`/api/lifts/${lift._id}`, {
             method: 'DELETE',
             body: lift.userId,
         })
-        if (!res.ok) {
-            throw new Error(res.status);
+        const data = await res.json();
+        if (!data.success) {
+            throw new Error();
         }
-        else {
-            //TODO: refresh list
-        }
+
+        let targetLifts = cloneDeep(state);
+        let index = findIndex(targetLifts, (lift) => lift._id == data.id);
+        targetLifts.splice(index, 1);
+
+        setState(targetLifts);
+        
         } catch (error) {
         console.log('Failed to add lift');
         }
@@ -55,22 +63,29 @@ const Card = ({ lift, isNew = true }) => {
 
     const putData = async (form) => {
         try {
-          const res = await fetch(`/api/lifts/${lift._id}`, {
-            method: 'PUT',
-            headers: {
-              Accept: contentType,
-              'Content-Type': contentType,
-            },
-            body: JSON.stringify(form),
-          })
-    
-          // Throw error with status code in case Fetch API req failed
-          if (!res.ok) {
-            throw new Error(res.status)
-          }
-    
-          const { data } = await res.json()
-          setEditMode(false);
+            const res = await fetch(`/api/lifts/${lift._id}`, {
+                method: 'PUT',
+                headers: {
+                Accept: contentType,
+                'Content-Type': contentType,
+                },
+                body: JSON.stringify(form),
+            })
+            const data = await res.json();
+            // Throw error with status code in case Fetch API req failed
+            if (!data.success) {
+                throw new Error()
+            }
+            let targetLift = data.data.lift;
+            targetLift.sets = data.data.sets;
+
+            let targetLifts = cloneDeep(state);
+            let index = findIndex(targetLifts, (lift) => lift._id == targetLift._id);
+
+            targetLifts[index] = targetLift;
+            setState(targetLifts);
+
+            setEditMode(false);
         } catch (error) {
           setMessage('Failed to update lift')
         }
@@ -247,7 +262,7 @@ const Card = ({ lift, isNew = true }) => {
                             </div>
                         ))}
                         <div className="flex-between-center mt-4">
-                            <button className="btn bg-light text-dark" onClick={postDelete}>Delete</button>
+                            <button className="btn bg-light text-dark" onClick={deleteLift}>Delete</button>
                             <span>
                                 <button className="btn bg-secondary text-white" onClick={onCancel}>Cancel</button>
                                 <button className="btn bg-primary-2 ms-2 text-white" onClick={handleSubmit}>Save</button>
