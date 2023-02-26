@@ -62,7 +62,7 @@ const Index = ({ lifts, sets }) => {
             <Subheader></Subheader>
             {/* Create a card for each lift */}
             {
-            isEmpty(lifts) ? 
+            isEmpty(state) ? 
               <div className="flex-center row text-center">
                 <FontAwesomeIcon icon="fa-solid fa-dumbbell" size="10x" />
                 <div><h2>No lifts found</h2></div>
