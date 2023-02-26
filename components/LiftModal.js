@@ -1,7 +1,9 @@
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
+import { cloneDeep, each, toNumber } from 'lodash';
+import { LiftContext } from './LiftProvider';
 
 export const MAX_SET_COUNT = 100;
 
@@ -9,21 +11,25 @@ const LiftModal = ({ lift }) => {
     const contentType = 'application/json';
     const [errors, setErrors] = useState({});
     const [show, setShow] = useState(false);
+    const [state, setState] = useContext(LiftContext);
 
     const handleClose = () => {
         setShow(false);
         setSetCount(0);
+        setSetForm({});
+        setLiftForm(initialLiftForm);
     };
     const handleShow = () => setShow(true);
 
-    const [liftForm, setLiftForm] = useState({
+    const initialLiftForm = {
         userId: lift.userId,
         name: lift.name,
         set: lift.set,
         rep: lift.rep,
         note: lift.note,
         date: lift.date,
-    });
+    };
+    const [liftForm, setLiftForm] = useState(initialLiftForm);
     const [setCount, setSetCount] = useState(0);
     const [setForm, setSetForm] = useState({});
 
@@ -33,46 +39,50 @@ const LiftModal = ({ lift }) => {
         let name = target.name
 
         if (name == 'set'){
+            // if reducing the amount of sets, delete the extra sets
+            if (value < setCount)
+            for (let i = setCount; i > value; i--){
+                delete setForm[i];
+            }
+            
             if (value > 100)
                 setSetCount(MAX_SET_COUNT);
             else
-                setSetCount(value); 
-        }
-    }
-
-    //TODO: autofill reps
-    function handleRepChange(e){
-        let target = e.target
-        let value = target.value
-        let name = target.name
-
-        if (name == 'rep'){
+                setSetCount(toNumber(value));
         }
     }
 
     //TODO: move to liftmanager
     /* The POST method adds a new entry in the mongodb database. */
   const postData = async (form) => {
-    try {
-      const res = await fetch('/api/lifts', {
-        method: 'POST',
-        headers: {
-          Accept: contentType,
-          'Content-Type': contentType,
-        },
-        body: JSON.stringify(form),
-      })
+        try {
+        const res = await fetch('/api/lifts', {
+            method: 'POST',
+            headers: {
+            Accept: contentType,
+            'Content-Type': contentType,
+            },
+            body: JSON.stringify(form),
+        })
+        const data = await res.json();
 
-      // Throw error with status code in case Fetch API req failed
-      if (!res.ok) {
-        throw new Error(res.status);
-      }
-      else
+        //Throw error with status code in case Fetch API req failed
+        if (!data.success) {
+            throw new Error();
+        }
+        let targetLift = data.data.lift;
+        targetLift.sets = data.data.sets;
+  
+        let targetLifts = cloneDeep(state);
+        targetLifts.push(targetLift);
+
+        setState(targetLifts);
+       
         handleClose();
-    } catch (error) {
-      console.log('Failed to add lift');
+        } catch (error) {
+        console.log('Failed to add lift');
+        }
     }
-  }
 
   const setLift = (e) => {
     const target = e.target
@@ -122,12 +132,9 @@ const LiftModal = ({ lift }) => {
   }
 
   const handleSubmit = (e) => {
-    console.log('handle submit');
     e.preventDefault()
     const errs = formValidate()
     if (Object.keys(errs).length === 0) {
-        console.log(liftForm);
-        console.log(setForm);
         postData({liftForm, setForm})
     } else {
         console.log(errs);  
@@ -139,7 +146,7 @@ const LiftModal = ({ lift }) => {
     return (
         <>
         {/* TODO: move button up to parent */}
-        <Button className="bg-primary-2 border-dark " onClick={handleShow}>
+        <Button className="bg-primary-2 border-dark" onClick={handleShow}>
             New Lift
         </Button>
 
@@ -184,6 +191,7 @@ const LiftModal = ({ lift }) => {
                             type="date"
                             name="date"
                             onChange={setLift}
+                            value={new Date().toISOString().substring(0, 10)}
                             required
                         ></input>
                     </div>
