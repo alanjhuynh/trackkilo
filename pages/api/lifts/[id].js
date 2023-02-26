@@ -42,6 +42,7 @@ export default async function handler(req, res) {
           return res.status(400).json({ success: false })
         }
         let sets = {};
+        let setIndexes = [];
         for (let i = 1; i < size(req.body.setForm) + 1; i++) {
           let set = req.body.setForm[i];
           if (session.userId != set.userId)
@@ -56,9 +57,10 @@ export default async function handler(req, res) {
               upsert: true,
             });
             sets[targetSet.index] = targetSet;
+            setIndexes.push(targetSet.index);
         }
 
-        //TODO: delete sets
+        await Set.deleteMany({liftId: id, index: {"$nin": setIndexes}});
         
         res.status(200).json({ success: true, data: {lift, sets} })
       } catch (error) {
