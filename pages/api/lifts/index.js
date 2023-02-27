@@ -13,11 +13,39 @@ export default async function handler(req, res) {
     case 'GET':
       try {
         const session = await getSession({req})
-        if (session.userId != req.body){
-          res.status(400).json({success: false});
-          return;
+        if(!session) {
+          return {
+            redirect: {
+              destination: '/login',
+            }
+          }
         }
-        const lifts = await Lift.find({}) /* find all the data in our database */
+        
+        let result = await Lift.find({userId: session.userId})
+        let lifts = result.map((doc) => {
+          const lift = doc.toObject()
+          lift._id = lift._id.toString()
+          lift.date = lift.date.toString()
+          return lift
+        })
+
+        for (let i = 0; i < lifts.length; i++){
+          let result = await Set.find({
+            liftId: lifts[i]._id,
+            userId: session.userId,
+          });
+          let sets = result.map((doc) => {
+            const set = doc.toObject();
+            set._id = set._id.toString();
+            return set;
+          })
+
+          let targetSets = {};
+          each(sets, (set) => {
+            targetSets[set.index] = set;
+          })
+          lifts[i].sets = targetSets;    
+        }
         res.status(200).json({ success: true, data: lifts })
       } catch (error) {
         res.status(400).json({ success: false })

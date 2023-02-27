@@ -18,6 +18,7 @@ const LiftModal = ({ lift }) => {
         setSetCount(0);
         setSetForm({});
         setLiftForm(initialLiftForm);
+        setIsSaving(false);
     };
     const handleShow = () => setShow(true);
 
@@ -32,6 +33,7 @@ const LiftModal = ({ lift }) => {
     const [liftForm, setLiftForm] = useState(initialLiftForm);
     const [setCount, setSetCount] = useState(0);
     const [setForm, setSetForm] = useState({});
+    const [isSaving, setIsSaving] = useState(false);
 
     function handleSetChange(e){
         let target = e.target
@@ -77,6 +79,7 @@ const LiftModal = ({ lift }) => {
         targetLifts.push(targetLift);
 
         setState(targetLifts);
+        setIsSaving(false);
        
         handleClose();
         } catch (error) {
@@ -133,6 +136,7 @@ const LiftModal = ({ lift }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    setIsSaving(true);
     const errs = formValidate()
     if (Object.keys(errs).length === 0) {
         postData({liftForm, setForm})
@@ -237,8 +241,8 @@ const LiftModal = ({ lift }) => {
             <Button variant="secondary" onClick={handleClose}>
                 Cancel
             </Button>
-            <Button className="bg-primary-2 border-dark" onClick={handleSubmit}>
-                Save
+            <Button disabled={isSaving} className="bg-primary-2 border-dark" onClick={handleSubmit}>
+                {isSaving ? <span className="spinner-grow spinner-grow-sm"></span> : 'Save'}
             </Button>
             </Modal.Footer>
         </Modal>
