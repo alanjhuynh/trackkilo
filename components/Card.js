@@ -24,6 +24,7 @@ const Card = ({ lift, isNew = true }) => {
     const [liftForm, setLiftForm] = useState(initialLiftForm);
     const [setCount, setSetCount] = useState(0);
     const [setForm, setSetForm] = useState(initialSetForm);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
     if (isNew)
@@ -36,10 +37,12 @@ const Card = ({ lift, isNew = true }) => {
         setSetForm(initialSetForm);
         setSetCount(size(setForm));
         setEditMode(false);
+        setIsSaving(false);
     };
 
     //TODO: add confirmation
     const deleteLift = async () => {
+        setIsSaving(true);
         try {
         const res = await fetch(`/api/lifts/${lift._id}`, {
             method: 'DELETE',
@@ -53,6 +56,8 @@ const Card = ({ lift, isNew = true }) => {
         let targetLifts = cloneDeep(state);
         let index = findIndex(targetLifts, (lift) => lift._id == data.id);
         targetLifts.splice(index, 1);
+
+        setIsSaving(false);
 
         setState(targetLifts);
         
@@ -83,6 +88,7 @@ const Card = ({ lift, isNew = true }) => {
             let index = findIndex(targetLifts, (lift) => lift._id == targetLift._id);
 
             targetLifts[index] = targetLift;
+            setIsSaving(false);
             setState(targetLifts);
 
             setEditMode(false);
@@ -103,6 +109,7 @@ const Card = ({ lift, isNew = true }) => {
       const handleSubmit = (e) => {
         e.preventDefault()
         const errs = formValidate()
+        setIsSaving(true);
         if (Object.keys(errs).length === 0) {
             putData({liftForm, setForm})
         } else {
@@ -262,10 +269,10 @@ const Card = ({ lift, isNew = true }) => {
                             </div>
                         ))}
                         <div className="flex-between-center mt-4">
-                            <button className="btn bg-light text-dark" onClick={deleteLift}>Delete</button>
+                            <button disabled={isSaving} className="btn bg-light text-dark" onClick={deleteLift}>{isSaving ? <span className="spinner-grow spinner-grow-sm"></span> : 'Delete'}</button>
                             <span>
                                 <button className="btn bg-secondary text-white" onClick={onCancel}>Cancel</button>
-                                <button className="btn bg-primary-2 ms-2 text-white" onClick={handleSubmit}>Save</button>
+                                <button disabled={isSaving} className="btn bg-primary-2 ms-2 text-white" onClick={handleSubmit}>{isSaving ? <span className="spinner-grow spinner-grow-sm"></span> : 'Save'}</button>
                             </span>
                         </div>
                     </div>
