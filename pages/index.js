@@ -1,7 +1,3 @@
-import Link from 'next/link'
-import dbConnect from '../lib/dbConnect'
-import Lift from '../models/Lift'
-import Set from '../models/Set';
 import { useRouter } from 'next/router'
 import { useSession, getSession } from 'next-auth/react';
 import Card from '../components/Card';
@@ -10,15 +6,47 @@ import Subheader from '../components/Subheader';
 import Sidebar from '../components/Sidebar';
 import { FontAwesomeIcon } from '../node_modules/@fortawesome/react-fontawesome/index';
 import { LiftContext, LiftProvider } from '../components/LiftProvider';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 
-const Index = ({ lifts, sets }) => {
+const Index = () => {
+  const contentType = 'application/json';
   const router = useRouter();
   const { data: session, status } = useSession({required: true});
   const [state, setState] = useContext(LiftContext);
+  const [isGetting, setIsGetting] = useState(false);
+
+  const getData = async () => {
+    try {
+      const res = await fetch('/api/lifts', {
+          method: 'GET',
+          headers: {
+          Accept: contentType,
+          'Content-Type': contentType,
+          },
+      })
+      const data = await res.json();
+
+      if (!data.success) {
+          throw new Error();
+      }
+
+      setState(data.data);
+      setIsGetting(false);
+      
+    } catch (error) {
+      setIsGetting(false);
+      console.log('Failed to get lifts');
+    }
+}
 
   useEffect(() => {
-    setState(lifts)
+    if (!session){
+      router.push('/login');
+    }
+    if (isEmpty(state)){
+        setIsGetting(true);
+        getData();
+    }
   }, []);
 
   state.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -58,17 +86,18 @@ const Index = ({ lifts, sets }) => {
           <Sidebar></Sidebar>
         </div>
         <div className="col col-sm-10 p-0 bg-dark-2">
-          <div className="my-4 mx-5">
+          <div className={isGetting ? "text-center" : "my-4 mx-5"}>
             <Subheader></Subheader>
             {/* Create a card for each lift */}
             {
-            isEmpty(state) ? 
-              <div className="flex-center row text-center">
-                <FontAwesomeIcon icon="fa-solid fa-dumbbell" size="10x" />
-                <div><h2>No lifts found</h2></div>
-              </div> 
-              : 
-              cardsByDate
+              isGetting ? <div className="spinner-grow"></div> :
+              isEmpty(state) ? 
+                <div className="flex-center row text-center">
+                  <FontAwesomeIcon icon="fa-solid fa-dumbbell" size="10x" />
+                  <div><h2>No lifts found</h2></div>
+                </div> 
+                : 
+                cardsByDate
             }
 
           </div>
@@ -76,49 +105,6 @@ const Index = ({ lifts, sets }) => {
       </>
     )
   } 
-}
-
-/* Retrieves lift(s) data from mongodb database */
-export async function getServerSideProps(context) {
-  const session = await getSession(context);
-  if(!session) {
-    return {
-      redirect: {
-        destination: '/login',
-      }
-    }
-  }
-
-  await dbConnect()
-
-  /* find all the data in our database */
-  let result = await Lift.find({userId: session.userId})
-  let lifts = result.map((doc) => {
-    const lift = doc.toObject()
-    lift._id = lift._id.toString()
-    lift.date = lift.date.toString()
-    return lift
-  })
-
-  for (let i = 0; i < lifts.length; i++){
-    let result = await Set.find({
-      liftId: lifts[i]._id,
-      userId: session.userId,
-    });
-    let sets = result.map((doc) => {
-      const set = doc.toObject();
-      set._id = set._id.toString();
-      return set;
-    })
-
-    let targetSets = {};
-    each(sets, (set) => {
-      targetSets[set.index] = set;
-    })
-    lifts[i].sets = targetSets;    
-  }
-
-  return { props: { lifts: lifts} }
 }
 
 export default Index
