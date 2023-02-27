@@ -28,7 +28,7 @@ const LiftModal = ({ lift }) => {
         set: lift.set,
         rep: lift.rep,
         note: lift.note,
-        date: lift.date,
+        date: new Date().toISOString().substring(0, 10),
     };
     const [liftForm, setLiftForm] = useState(initialLiftForm);
     const [setCount, setSetCount] = useState(0);
@@ -195,7 +195,7 @@ const LiftModal = ({ lift }) => {
                             type="date"
                             name="date"
                             onChange={setLift}
-                            value={new Date().toISOString().substring(0, 10)}
+                            value={liftForm.date}
                             required
                         ></input>
                     </div>
