@@ -40,9 +40,6 @@ const Index = () => {
 }
 
   useEffect(() => {
-    if (!session){
-      router.push('/login');
-    }
     if (isEmpty(state)){
         setIsGetting(true);
         getData();
