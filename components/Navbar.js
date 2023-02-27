@@ -15,7 +15,7 @@ function Navbar() {
                         {session && <img className="rounded-circle profile-pic" src={session?.user?.image ? session.user.image : "user.svg"}></img>}
                     </a>
                     <div className="dropdown-menu dropdown-menu-end">
-                        <button onClick={() => signOut()} className="dropdown-item" type="button">Sign Out</button>
+                        <button onClick={() => signOut({callbackUrl: '/login'})} className="dropdown-item" type="button">Sign Out</button>
                     </div>
                 </div>
             </div>
