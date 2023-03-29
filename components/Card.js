@@ -122,10 +122,15 @@ const Card = ({ lift, isNew = true }) => {
         setEditMode(!editMode);
     }
 
-    function handleSetChange(e){
-        let target = e.target
-        let value = target.value
-        let name = target.name
+    const setLift = (e) => {                
+        const target = e.target
+        const value = target.value
+        const name = target.name
+    
+        setLiftForm({
+          ...liftForm,
+          [name]: value,
+        })
 
         if (name == 'set'){
             // if reducing the amount of sets, delete the extra sets
@@ -139,17 +144,6 @@ const Card = ({ lift, isNew = true }) => {
             else
                 setSetCount(toNumber(value));
         }
-    }
-
-    const setLift = (e) => {                
-        const target = e.target
-        const value = target.value
-        const name = target.name
-    
-        setLiftForm({
-          ...liftForm,
-          [name]: value,
-        })
       }
     
       const setSet = (e, index) => {
@@ -203,7 +197,6 @@ const Card = ({ lift, isNew = true }) => {
                                     type="number"
                                     name="set"
                                     onChange={setLift}
-                                    onBlur={handleSetChange}
                                     placeholder="Set"
                                     value={liftForm.set}
                                 ></input>

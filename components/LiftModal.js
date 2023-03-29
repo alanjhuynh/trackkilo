@@ -35,25 +35,6 @@ const LiftModal = ({ lift }) => {
     const [setForm, setSetForm] = useState({});
     const [isSaving, setIsSaving] = useState(false);
 
-    function handleSetChange(e){
-        let target = e.target
-        let value = target.value
-        let name = target.name
-
-        if (name == 'set'){
-            // if reducing the amount of sets, delete the extra sets
-            if (value < setCount)
-            for (let i = setCount; i > value; i--){
-                delete setForm[i];
-            }
-            
-            if (value > 100)
-                setSetCount(MAX_SET_COUNT);
-            else
-                setSetCount(toNumber(value));
-        }
-    }
-
     //TODO: move to liftmanager
     /* The POST method adds a new entry in the mongodb database. */
   const postData = async (form) => {
@@ -96,6 +77,19 @@ const LiftModal = ({ lift }) => {
       ...liftForm,
       [name]: value,
     })
+
+    if (name == 'set'){
+        // if reducing the amount of sets, delete the extra sets
+        if (value < setCount)
+        for (let i = setCount; i > value; i--){
+            delete setForm[i];
+        }
+        
+        if (value > 100)
+            setSetCount(MAX_SET_COUNT);
+        else
+            setSetCount(toNumber(value));
+    }
   }
 
   const setSet = (e, index) => {
@@ -176,7 +170,6 @@ const LiftModal = ({ lift }) => {
                             type="number"
                             name="set"
                             onChange={setLift}
-                            onBlur={handleSetChange}
                             placeholder="Set"
                         ></input>
                         <FontAwesomeIcon className="mx-2" icon="fa-solid fa-x" />
