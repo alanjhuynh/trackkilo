@@ -13,7 +13,7 @@ function Sidebar() {
             </li>
             <li>
               <Link href="/stats" className="nav-link flex-between-center">
-                <span>Stats</span>
+                <span>Statistics</span>
                 <FontAwesomeIcon icon="fa-solid fa-chart-line" />
               </Link>
             </li>
