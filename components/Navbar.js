@@ -8,7 +8,7 @@ function Navbar() {
         <nav className="navbar navbar-dark bg-dark sticky-top">
             <div className="flex-between-center w-100 mx-5">
                 <Link href="/" className="nav-link">
-                    <h2>track<span className="text-muted">kilo</span></h2>
+                    <h2>track<span className="text-muted notranslate">kilo</span></h2>
                 </Link>
                 <div className="dropdown">
                     <a data-bs-toggle="dropdown">
