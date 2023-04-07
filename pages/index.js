@@ -7,17 +7,25 @@ import Sidebar from '../components/Sidebar';
 import { FontAwesomeIcon } from '../node_modules/@fortawesome/react-fontawesome/index';
 import { LiftContext, LiftProvider } from '../components/LiftProvider';
 import { useContext, useEffect, useState } from 'react';
+import InfiniteScroll from 'react-infinite-scroll-component';
 
 const Index = () => {
   const contentType = 'application/json';
   const router = useRouter();
   const { data: session, status } = useSession({required: true});
   const [state, setState] = useContext(LiftContext);
-  const [isGetting, setIsGetting] = useState(false);
+  const [isGetting, setIsGetting] = useState(false); //TODO: remove
+
+  // const [items, setItems] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   const getData = async () => {
     try {
-      const res = await fetch('/api/lifts', {
+      let params = new URLSearchParams({
+        page
+      });
+      const res = await fetch(`/api/lifts?${params}`, {
           method: 'GET',
           headers: {
           Accept: contentType,
@@ -30,9 +38,13 @@ const Index = () => {
           throw new Error();
       }
 
-      setState(data.data);
-      setIsGetting(false);
-      
+      if (data.data.length === 0) {
+        setHasMore(false);
+      } else {
+        setState([...state, ...data.data]);
+        setIsGetting(false);
+        setPage(page + 1);
+      }
     } catch (error) {
       setIsGetting(false);
       console.log('Failed to get lifts');
@@ -44,7 +56,7 @@ const Index = () => {
         setIsGetting(true);
         getData();
     }
-  }, []);
+  }, [page]);
 
   state.sort((a, b) => new Date(b.date) - new Date(a.date));
   
@@ -86,17 +98,24 @@ const Index = () => {
           <div className={isGetting ? "text-center" : "my-4 mx-5"}>
             <Subheader></Subheader>
             {/* Create a card for each lift */}
-            {
-              isGetting ? <div className="spinner-grow"></div> :
-              isEmpty(state) ? 
+            <InfiniteScroll
+              dataLength={state.length}
+              next={getData}
+              hasMore={hasMore}
+              loader={<div className="spinner-grow"></div>}
+              endMessage={
+                isEmpty(state) ? 
                 <div className="flex-center row text-center">
                   <FontAwesomeIcon icon="fa-solid fa-dumbbell" size="10x" />
                   <div><h2>No lifts found</h2></div>
-                </div> 
-                : 
-                cardsByDate
-            }
-
+                </div> : ''
+              }
+              scrollableTarget="main"
+              className="p-2"
+            >
+              {cardsByDate}
+            </InfiniteScroll>
+            
           </div>
         </div>
       </>

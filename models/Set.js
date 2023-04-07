@@ -27,6 +27,6 @@ const SetSchema = new mongoose.Schema({
   rpe: {
     type: Number,
   },
-});
+}, { timestamps: true });
 
 export default mongoose.models.Set || mongoose.model('Set', SetSchema)

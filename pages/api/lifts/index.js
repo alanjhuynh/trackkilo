@@ -5,7 +5,8 @@ import { each, size } from 'lodash';
 import { getSession } from 'next-auth/react';
 
 export default async function handler(req, res) {
-  const { method } = req
+  const { method } = req;
+  const PAGE_SIZE = 12;
 
   await dbConnect()
 
@@ -20,8 +21,13 @@ export default async function handler(req, res) {
             }
           }
         }
-        
+
+        const { page } = req.query;
+
         let result = await Lift.find({userId: session.userId})
+          .sort({date: -1, createdAt: -1})
+          .limit(PAGE_SIZE)
+          .skip(PAGE_SIZE * (page - 1))
         let lifts = result.map((doc) => {
           const lift = doc.toObject()
           lift._id = lift._id.toString()
