@@ -108,3 +108,7 @@ a, .nav-link {
 .card {
     height: 210px;
 }
+
+.infinite-scroll-component {
+    overflow-x: hidden !important;
+}
