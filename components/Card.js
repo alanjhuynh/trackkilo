@@ -19,7 +19,7 @@ const Card = ({ lift, isNew = true }) => {
         set: lift.set,
         rep: lift.rep,
         note: lift.note,
-        date: moment().format('YYYY-MM-DD'),
+        date: moment(new Date(lift.date)).format('YYYY-MM-DD'),
     };
     const initialSetForm = cloneDeep(lift.sets);
     const [liftForm, setLiftForm] = useState(initialLiftForm);
