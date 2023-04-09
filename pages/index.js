@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from '../node_modules/@fortawesome/react-fontawesome/
 import { LiftContext, LiftProvider } from '../components/LiftProvider';
 import { useContext, useEffect, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
+import moment from 'moment';
 
 const Index = () => {
   const contentType = 'application/json';
@@ -61,7 +62,13 @@ const Index = () => {
   state.sort((a, b) => new Date(b.date) - new Date(a.date));
   
   let liftsByDate = state.reduce((group, lift) => {
-    let date = new Date(lift.date).toISOString().substring(0, 10);
+    let date = moment(new Date(lift.date))
+    // Display day only if within the week
+    // Otherwise, display day and date
+    // Only display year if not within the year
+    date = date.isBetween(moment().startOf('week'), moment().endOf('week')) ? date.format('dddd') :
+    date.isBetween(moment().startOf('year'), moment().endOf('year')) ? date.format('dddd, MMMM D') : date.format('LL');
+    
     if (!group[date]) {
       group[date] = [];
     }
