@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { cloneDeep, findIndex, size, toNumber } from "lodash";
 import { LiftContext } from "./LiftProvider";
+import moment from 'moment';
 
 export const MAX_SET_COUNT = 100;
 
@@ -18,7 +19,7 @@ const Card = ({ lift, isNew = true }) => {
         set: lift.set,
         rep: lift.rep,
         note: lift.note,
-        date: new Date(lift.date).toISOString().substring(0, 10),
+        date: moment().format('YYYY-MM-DD'),
     };
     const initialSetForm = cloneDeep(lift.sets);
     const [liftForm, setLiftForm] = useState(initialLiftForm);

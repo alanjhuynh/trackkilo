@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useContext, useEffect, useState } from 'react';
 import { cloneDeep, each, toNumber } from 'lodash';
 import { LiftContext } from './LiftProvider';
+import moment from 'moment';
 
 export const MAX_SET_COUNT = 100;
 
@@ -28,7 +29,7 @@ const LiftModal = ({ lift }) => {
         set: lift.set,
         rep: lift.rep,
         note: lift.note,
-        date: new Date().toISOString().substring(0, 10),
+        date: moment().format('YYYY-MM-DD'),
     };
     const [liftForm, setLiftForm] = useState(initialLiftForm);
     const [setCount, setSetCount] = useState(0);
