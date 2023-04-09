@@ -1,4 +1,5 @@
-import mongoose from 'mongoose'
+import mongoose from 'mongoose';
+import moment from 'moment';
 
 const LiftSchema = new mongoose.Schema({
   userId: {
@@ -22,8 +23,14 @@ const LiftSchema = new mongoose.Schema({
   },
   date: {
     type: Date,
-    default: Date.now
+    default: moment().format('YYYY-MM-DD'),
   },
 }, { timestamps: true });
+
+LiftSchema.pre('save', function(next) {
+  // save as UTC
+  this.date = moment.utc(new Date(this.date)).format('YYYY-MM-DD HH:mm')
+  next();
+});
 
 export default mongoose.models.Lift || mongoose.model('Lift', LiftSchema)
