@@ -1,7 +1,8 @@
 import dbConnect from '../../../lib/dbConnect';
 import Lift from '../../../models/Lift';
 import Set from '../../../models/Set';
-import { getSession } from 'next-auth/react';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from 'pages/api/auth/[...nextauth]';
 import { each, size } from 'lodash';
 import mongoose from 'mongoose';
 
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
 
     case 'PUT' /* Edit a model by its ID */:
       try {
-        const session = await getSession({req})
+        const session = await getServerSession(req, res, authOptions)
         if (session.userId != req.body.liftForm.userId){
           res.status(400).json({success: false});
           return;
@@ -71,7 +72,7 @@ export default async function handler(req, res) {
 
     case 'DELETE' /* Delete a model by its ID */:
       try {
-        const session = await getSession({req})
+        const session = await getServerSession(req, res, authOptions)
         if (session.userId != req.body){
           res.status(400).json({success: false});
           return;
