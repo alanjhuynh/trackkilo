@@ -3,7 +3,7 @@ import Lift from '../../../models/Lift';
 import Set from '../../../models/Set';
 import { each, size } from 'lodash';
 import { getServerSession } from "next-auth/next";
-import { authOptions } from 'pages/api/auth/[...nextauth]';
+import { authOptions } from '../auth/[...nextauth]';
 
 export default async function handler(req, res) {
   const { method } = req;

@@ -2,7 +2,7 @@ import dbConnect from '../../../lib/dbConnect';
 import Lift from '../../../models/Lift';
 import Set from '../../../models/Set';
 import { getServerSession } from "next-auth/next";
-import { authOptions } from 'pages/api/auth/[...nextauth]';
+import { authOptions } from '../auth/[...nextauth]';
 import { each, size } from 'lodash';
 import mongoose from 'mongoose';
 
