@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router'
-import { useSession, getSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import Card from '../components/Card';
 import { chunk, cloneDeep, each, isEmpty, set } from 'lodash';
 import Subheader from '../components/Subheader';
