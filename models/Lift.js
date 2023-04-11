@@ -29,7 +29,7 @@ const LiftSchema = new mongoose.Schema({
 
 LiftSchema.pre('save', function(next) {
   // save as UTC
-  this.date = moment.utc(new Date(this.date)).format('YYYY-MM-DD HH:mm')
+  this.date = moment(this.date, 'YYYY-MM-DD').utc().format('YYYY-MM-DD HH:mm')
   next();
 });
 
