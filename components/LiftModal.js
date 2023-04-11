@@ -40,6 +40,7 @@ const LiftModal = ({ lift }) => {
     /* The POST method adds a new entry in the mongodb database. */
   const postData = async (form) => {
         try {
+        form.liftForm.date = moment(form.liftForm.date, 'YYYY-MM-DD').utc().format('YYYY-MM-DD HH:mm')
         const res = await fetch('/api/lifts', {
             method: 'POST',
             headers: {

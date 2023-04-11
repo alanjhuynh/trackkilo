@@ -27,10 +27,10 @@ const LiftSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-LiftSchema.pre('save', function(next) {
-  // save as UTC
-  this.date = moment(this.date, 'YYYY-MM-DD').utc().format('YYYY-MM-DD HH:mm')
-  next();
-});
+// LiftSchema.pre('save', function(next) {
+//   // save as UTC
+//   this.date = moment(this.date, 'YYYY-MM-DD').utc().format('YYYY-MM-DD HH:mm')
+//   next();
+// });
 
 export default mongoose.models.Lift || mongoose.model('Lift', LiftSchema)
