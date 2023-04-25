@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { cloneDeep, findIndex, size, toNumber } from "lodash";
 import { LiftContext } from "./LiftProvider";
 import moment from 'moment';
+import toast from 'react-hot-toast';
 
 export const MAX_SET_COUNT = 100;
 
@@ -61,9 +62,11 @@ const Card = ({ lift, isNew = true }) => {
         setIsSaving(false);
 
         setState(targetLifts);
+        toast.success('Lift deleted');
         
         } catch (error) {
-        console.log('Failed to add lift');
+        toast.error('Failed to delete lift');
+        setIsSaving(false);
         }
     }
 
@@ -94,8 +97,11 @@ const Card = ({ lift, isNew = true }) => {
             setState(targetLifts);
 
             setEditMode(false);
+            toast.success('Lift updated!');
         } catch (error) {
           setMessage('Failed to update lift')
+          toast.error('Failed to update lift');
+          setIsSaving(false);
         }
       }
     
@@ -115,8 +121,11 @@ const Card = ({ lift, isNew = true }) => {
         if (Object.keys(errs).length === 0) {
             putData({liftForm, setForm})
         } else {
-            console.log(errs);  
-          setErrors({ errs })
+            console.log(errs);
+            setIsSaving(false);
+            toast.error('Please fill out form completely')  
+            //TODO: set validation error inline
+           //setErrors({ errs })
         }
       }
 

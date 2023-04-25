@@ -9,6 +9,7 @@ import { LiftContext, LiftProvider } from '../components/LiftProvider';
 import { useContext, useEffect, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import moment from 'moment';
+import { Toaster } from 'react-hot-toast';
 
 const Index = () => {
   const contentType = 'application/json';
@@ -125,6 +126,7 @@ const Index = () => {
             
           </div>
         </div>
+        <Toaster />
       </>
     )
   } 

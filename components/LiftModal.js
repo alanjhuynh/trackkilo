@@ -5,6 +5,7 @@ import { useContext, useEffect, useState } from 'react';
 import { cloneDeep, each, toNumber } from 'lodash';
 import { LiftContext } from './LiftProvider';
 import moment from 'moment';
+import toast from 'react-hot-toast';
 
 export const MAX_SET_COUNT = 100;
 
@@ -65,8 +66,11 @@ const LiftModal = ({ lift }) => {
         setIsSaving(false);
        
         handleClose();
+        toast.success('Lift added');
+
         } catch (error) {
-        console.log('Failed to add lift');
+        toast.error('Failed to add lift');
+        setIsSaving(false);
         }
     }
 
@@ -138,6 +142,9 @@ const LiftModal = ({ lift }) => {
         postData({liftForm, setForm})
     } else {
         console.log(errs);  
+        setIsSaving(false);
+        toast.error('Please fill out form completely')
+        //TODO: update set error to be inline
       setErrors({ errs })
     }
   }
