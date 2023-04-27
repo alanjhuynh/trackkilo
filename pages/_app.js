@@ -23,6 +23,7 @@ function App({ Component, pageProps, session }) {
     <SessionProvider session={session}>
       <Head>
         <title>trackkilo</title>
+        <meta name="google" content="notranslate"></meta>
       </Head>
       
       <Navbar></Navbar>
