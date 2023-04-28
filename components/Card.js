@@ -2,6 +2,8 @@ import { useContext, useEffect, useState } from "react";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { cloneDeep, findIndex, size, toNumber } from "lodash";
 import { LiftContext } from "./LiftProvider";
+import moment from 'moment';
+import toast from 'react-hot-toast';
 
 export const MAX_SET_COUNT = 100;
 
@@ -18,7 +20,7 @@ const Card = ({ lift, isNew = true }) => {
         set: lift.set,
         rep: lift.rep,
         note: lift.note,
-        date: new Date(lift.date).toISOString().substring(0, 10),
+        date: moment(new Date(lift.date)).format('YYYY-MM-DD'),
     };
     const initialSetForm = cloneDeep(lift.sets);
     const [liftForm, setLiftForm] = useState(initialLiftForm);
@@ -60,14 +62,17 @@ const Card = ({ lift, isNew = true }) => {
         setIsSaving(false);
 
         setState(targetLifts);
+        toast.success('Lift deleted');
         
         } catch (error) {
-        console.log('Failed to add lift');
+        toast.error('Failed to delete lift');
+        setIsSaving(false);
         }
     }
 
     const putData = async (form) => {
         try {
+            form.liftForm.date = moment(form.liftForm.date, 'YYYY-MM-DD').utc().format('YYYY-MM-DD HH:mm')
             const res = await fetch(`/api/lifts/${lift._id}`, {
                 method: 'PUT',
                 headers: {
@@ -92,8 +97,11 @@ const Card = ({ lift, isNew = true }) => {
             setState(targetLifts);
 
             setEditMode(false);
+            toast.success('Lift updated!');
         } catch (error) {
           setMessage('Failed to update lift')
+          toast.error('Failed to update lift');
+          setIsSaving(false);
         }
       }
     
@@ -113,8 +121,11 @@ const Card = ({ lift, isNew = true }) => {
         if (Object.keys(errs).length === 0) {
             putData({liftForm, setForm})
         } else {
-            console.log(errs);  
-          setErrors({ errs })
+            console.log(errs);
+            setIsSaving(false);
+            toast.error('Please fill out form completely')  
+            //TODO: set validation error inline
+           //setErrors({ errs })
         }
       }
 

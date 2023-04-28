@@ -2,7 +2,8 @@ import dbConnect from '../../../lib/dbConnect';
 import Lift from '../../../models/Lift';
 import Set from '../../../models/Set';
 import { each, size } from 'lodash';
-import { getSession } from 'next-auth/react';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from '../auth/[...nextauth]';
 
 export default async function handler(req, res) {
   const { method } = req;
@@ -13,7 +14,7 @@ export default async function handler(req, res) {
   switch (method) {
     case 'GET':
       try {
-        const session = await getSession({req})
+        const session = await getServerSession(req, res, authOptions)
         if(!session) {
           return {
             redirect: {
@@ -59,7 +60,7 @@ export default async function handler(req, res) {
       break
     case 'POST':
       try {
-        const session = await getSession({req})
+        const session = await getServerSession(req, res, authOptions)
         if (session.userId != req.body.liftForm.userId){
           res.status(400).json({success: false});
           return;
