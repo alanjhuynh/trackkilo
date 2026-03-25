@@ -112,3 +112,29 @@ a, .nav-link {
 .infinite-scroll-component {
     overflow-x: hidden !important;
 }
+
+.stat-card {
+    border-left: 3px solid rgb(59,113,159);
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table-dark {
+    --bs-table-bg: transparent;
+}
+
+.table-dark th {
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+    font-weight: 500;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table-dark td {
+    border-bottom-color: rgba(255, 255, 255, 0.05);
+}
