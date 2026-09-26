@@ -1,95 +1,75 @@
+import mongoose from 'mongoose';
 import dbConnect from '../../../lib/dbConnect';
 import Lift from '../../../models/Lift';
 import Set from '../../../models/Set';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from '../auth/[...nextauth]';
-import { each, size } from 'lodash';
-import mongoose from 'mongoose';
+import { getUserId } from '../../../lib/auth';
+import { parseLiftPayload, serializeLift } from '../../../lib/liftPayload';
 
 export default async function handler(req, res) {
-  const {
-    query: { id },
-    method,
-  } = req
+  const userId = await getUserId(req, res);
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
 
-  await dbConnect()
+  const { id } = req.query;
+  if (!mongoose.isValidObjectId(id)) {
+    return res.status(404).json({ success: false, message: 'Lift not found' });
+  }
 
-  switch (method) {
-    // case 'GET' /* Get a model by its ID */:
-    //   try {
-    //     const lift = await Lift.findById(id)
-    //     if (!lift) {
-    //       return res.status(400).json({ success: false })
-    //     }
-    //     res.status(200).json({ success: true, data: lift })
-    //   } catch (error) {
-    //     res.status(400).json({ success: false })
-    //   }
-    //   break
+  await dbConnect();
 
-    case 'PUT' /* Edit a model by its ID */:
+  switch (req.method) {
+    case 'PUT': {
+      const parsed = parseLiftPayload(req.body);
+      if (parsed.error) {
+        return res.status(400).json({ success: false, message: parsed.error });
+      }
+
       try {
-        const session = await getServerSession(req, res, authOptions)
-        if (session.userId != req.body.liftForm.userId){
-          res.status(400).json({success: false});
-          return;
-        }
-
-        const lift = await Lift.findByIdAndUpdate(id, req.body.liftForm, {
+        const lift = await Lift.findOneAndUpdate({ _id: id, userId }, parsed.lift, {
           new: true,
           runValidators: true,
-        })
+        });
         if (!lift) {
-          return res.status(400).json({ success: false })
-        }
-        let sets = {};
-        let setIndexes = [];
-        for (let i = 1; i < size(req.body.setForm) + 1; i++) {
-          let set = req.body.setForm[i];
-          if (session.userId != set.userId)
-            continue;
-
-            if (!set._id) {
-              set._id = new mongoose.mongo.ObjectId();
-            }
-            let targetSet = await Set.findByIdAndUpdate(set._id, set, {
-              new: true,
-              runValidators: true,
-              upsert: true,
-            });
-            sets[targetSet.index] = targetSet;
-            setIndexes.push(targetSet.index);
+          return res.status(404).json({ success: false, message: 'Lift not found' });
         }
 
-        await Set.deleteMany({liftId: id, index: {"$nin": setIndexes}});
-        
-        res.status(200).json({ success: true, data: {lift, sets} })
+        // Upsert sets by position, then drop any beyond the new set count
+        await Set.bulkWrite(parsed.sets.map((set) => ({
+          updateOne: {
+            filter: { liftId: id, userId, index: set.index },
+            update: { $set: { ...set, liftId: id, userId } },
+            upsert: true,
+          },
+        })));
+        await Set.deleteMany({ liftId: id, userId, index: { $gt: parsed.sets.length } });
+
+        const sets = await Set.find({ liftId: id, userId }).lean();
+        res.status(200).json({ success: true, data: serializeLift(lift, sets) });
       } catch (error) {
-        console.log(error);
-        res.status(400).json({ success: false })
+        console.error('Failed to update lift', error);
+        res.status(500).json({ success: false });
       }
-      break
+      break;
+    }
 
-    case 'DELETE' /* Delete a model by its ID */:
+    case 'DELETE':
       try {
-        const session = await getServerSession(req, res, authOptions)
-        if (session.userId != req.body){
-          res.status(400).json({success: false});
-          return;
+        const lift = await Lift.findOneAndDelete({ _id: id, userId });
+        if (!lift) {
+          return res.status(404).json({ success: false, message: 'Lift not found' });
         }
-        const deletedLift = await Lift.deleteOne({ _id: id });
-        if (!deletedLift) {
-          return res.status(400).json({ success: false })
-        }
-        await Set.deleteMany({liftId: id});
-        res.status(200).json({ success: true, id})
+        await Set.deleteMany({ liftId: id, userId });
+        res.status(200).json({ success: true, id });
       } catch (error) {
-        res.status(400).json({ success: false })
+        console.error('Failed to delete lift', error);
+        res.status(500).json({ success: false });
       }
-      break
+      break;
 
     default:
-      res.status(400).json({ success: false })
-      break
+      res.setHeader('Allow', ['PUT', 'DELETE']);
+      res.status(405).json({ success: false });
+      break;
   }
 }
