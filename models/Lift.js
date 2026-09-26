@@ -1,9 +1,20 @@
 import mongoose from 'mongoose';
+import { CARDIO_KEYS, DISTANCE_UNITS } from '../lib/activities';
+
+// A log entry: a lift (with Set documents) or a run, walk or ride
+const isLift = function isLift() {
+  return !CARDIO_KEYS.includes(this.kind);
+};
 
 const LiftSchema = new mongoose.Schema({
   userId: {
     type: String,
     required: true
+  },
+  // "run", "walk" or "ride"; missing on lifts
+  kind: {
+    type: String,
+    enum: CARDIO_KEYS
   },
   name: {
     type: String,
@@ -12,11 +23,22 @@ const LiftSchema = new mongoose.Schema({
   },
   set: {
     type: Number,
-    required: true
+    required: isLift
   },
   rep: {
     type: Number,
-    required: true
+    required: isLift
+  },
+  // Runs, walks and rides
+  distance: {
+    type: Number
+  },
+  distanceUnit: {
+    type: String,
+    enum: DISTANCE_UNITS
+  },
+  duration: {
+    type: Number // seconds
   },
   note: {
     type: String

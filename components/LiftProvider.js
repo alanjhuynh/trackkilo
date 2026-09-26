@@ -1,6 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
-import { mutate } from 'swr';
-import { EXERCISES_KEY, STATS_KEY, request } from '../lib/api';
+import { request, revalidateSummaries } from '../lib/api';
 
 const PAGE_SIZE = 20;
 
@@ -9,12 +8,6 @@ const LiftContext = createContext(null);
 // Log order: newest date first, ties broken by id (matches the API)
 const isAfterCursor = (lift, cursor) =>
   lift.date < cursor.date || (lift.date === cursor.date && lift._id < cursor._id);
-
-// Stats and exercise summaries cover every lift, so refresh them after any change
-const revalidateSummaries = () => {
-  mutate(EXERCISES_KEY);
-  mutate(STATS_KEY);
-};
 
 /**
  * The lifts loaded into the log, shared across pages so navigating away and
@@ -29,6 +22,8 @@ function LiftProvider({ children }) {
   const cursor = useRef(null);
   const moreRef = useRef(true);
   const inFlight = useRef(false);
+  // Bumped by reset() so a page that was loading beforehand is discarded
+  const generation = useRef(0);
 
   // Add or replace a lift. Lifts older than everything loaded so far are
   // skipped; they'll arrive in order with a later page.
@@ -43,6 +38,7 @@ function LiftProvider({ children }) {
   const loadMore = useCallback(async () => {
     if (inFlight.current) return;
     inFlight.current = true;
+    const loadGeneration = generation.current;
     setStatus('loading');
 
     try {
@@ -52,6 +48,7 @@ function LiftProvider({ children }) {
         params.set('beforeId', cursor.current._id);
       }
       const { data, hasMore: more } = await request(`/api/lifts?${params}`);
+      if (loadGeneration !== generation.current) return;
 
       if (data.length) cursor.current = data[data.length - 1];
       moreRef.current = more;
@@ -63,25 +60,42 @@ function LiftProvider({ children }) {
       setHasMore(more);
       setStatus('idle');
     } catch (error) {
-      setStatus('error');
+      if (loadGeneration === generation.current) setStatus('error');
     } finally {
-      inFlight.current = false;
-      setInitialized(true);
+      // After a reset, inFlight belongs to the newer load
+      if (loadGeneration === generation.current) {
+        inFlight.current = false;
+        setInitialized(true);
+      }
     }
   }, []);
 
+  // Forget loaded lifts so the log refetches, e.g. after an import
+  const reset = useCallback(() => {
+    generation.current += 1;
+    inFlight.current = false;
+    cursor.current = null;
+    moreRef.current = true;
+    setLifts([]);
+    setHasMore(true);
+    setStatus('idle');
+    setInitialized(false);
+    revalidateSummaries();
+  }, []);
+
+  // Resolves to { lift, censored }; `censored` means bad words were masked
   const createLift = useCallback(async (payload) => {
-    const { data } = await request('/api/lifts', { method: 'POST', body: payload });
+    const { data, censored } = await request('/api/lifts', { method: 'POST', body: payload });
     upsert(data);
     revalidateSummaries();
-    return data;
+    return { lift: data, censored };
   }, [upsert]);
 
   const updateLift = useCallback(async (id, payload) => {
-    const { data } = await request(`/api/lifts/${id}`, { method: 'PUT', body: payload });
+    const { data, censored } = await request(`/api/lifts/${id}`, { method: 'PUT', body: payload });
     upsert(data);
     revalidateSummaries();
-    return data;
+    return { lift: data, censored };
   }, [upsert]);
 
   const deleteLift = useCallback(async (id) => {
@@ -91,8 +105,8 @@ function LiftProvider({ children }) {
   }, []);
 
   const value = useMemo(() => ({
-    lifts, hasMore, status, initialized, loadMore, createLift, updateLift, deleteLift,
-  }), [lifts, hasMore, status, initialized, loadMore, createLift, updateLift, deleteLift]);
+    lifts, hasMore, status, initialized, loadMore, reset, createLift, updateLift, deleteLift,
+  }), [lifts, hasMore, status, initialized, loadMore, reset, createLift, updateLift, deleteLift]);
 
   return <LiftContext.Provider value={value}>{children}</LiftContext.Provider>;
 }

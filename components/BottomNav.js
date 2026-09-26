@@ -3,15 +3,15 @@ import { useRouter } from 'next/router';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlus } from '@fortawesome/free-solid-svg-icons';
 import { useLiftForm } from './LiftFormProvider';
-import { NAV_ITEMS } from './Sidebar';
+import { NAV_ITEMS, RequestBadge, useRequestCount } from './Sidebar';
 
-// Mobile tab bar with the "log a lift" button in the middle
+// Mobile tab bar with the "log a workout" button in the middle. Settings lives in the account menu.
 function BottomNav() {
   const { pathname } = useRouter();
   const { openNew } = useLiftForm();
-  const [first, second] = NAV_ITEMS;
+  const requests = useRequestCount();
 
-  const tab = (item) => {
+  const tab = (item, badge = 0) => {
     const active = pathname === item.href;
     return (
       <Link
@@ -19,19 +19,24 @@ function BottomNav() {
         className={`tk-tab${active ? ' active' : ''}`}
         aria-current={active ? 'page' : undefined}
       >
-        <FontAwesomeIcon icon={item.icon} />
-        <span>{item.label}</span>
+        <span className="tk-tab-icon">
+          <FontAwesomeIcon icon={item.icon} />
+          <RequestBadge count={badge} />
+        </span>
+        <span>{item.short || item.label}</span>
       </Link>
     );
   };
 
   return (
     <nav className="tk-bottom-nav" aria-label="Main">
-      {tab(first)}
-      <button type="button" className="tk-fab" onClick={() => openNew()} aria-label="Log a lift">
+      {tab(NAV_ITEMS.log)}
+      {tab(NAV_ITEMS.stats)}
+      <button type="button" className="tk-fab" onClick={() => openNew()} aria-label="Log a workout">
         <FontAwesomeIcon icon={faPlus} />
       </button>
-      {tab(second)}
+      {tab(NAV_ITEMS.leaderboard)}
+      {tab(NAV_ITEMS.friends, requests)}
     </nav>
   );
 }

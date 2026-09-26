@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useSession, signIn } from 'next-auth/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBolt, faChartLine, faTrophy } from '@fortawesome/free-solid-svg-icons';
+import { faBolt, faChartLine, faTrophy, faUserGroup } from '@fortawesome/free-solid-svg-icons';
 import { Brand } from '../components/Navbar';
 
 // Error codes next-auth appends as ?error=
@@ -18,6 +18,7 @@ const FEATURES = [
   { icon: faBolt, title: 'Fast logging', text: 'Common lifts are one tap away, with sets filled in from your last session.' },
   { icon: faTrophy, title: 'Automatic PRs', text: 'New personal records get flagged as you log them.' },
   { icon: faChartLine, title: 'Progress at a glance', text: 'Weekly volume, training frequency and your top lifts.' },
+  { icon: faUserGroup, title: 'Friends and leaderboards', text: 'Add friends and see who’s putting in the work.' },
 ];
 
 const PREVIEW_SETS = [
