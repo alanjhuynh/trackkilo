@@ -1,25 +1,46 @@
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChartLine, faHouse, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { useLiftForm } from './LiftFormProvider';
 
+export const NAV_ITEMS = [
+  { href: '/', label: 'Log', icon: faHouse },
+  { href: '/stats', label: 'Stats', icon: faChartLine },
+];
+
+// Desktop navigation (the bottom nav takes over on small screens)
 function Sidebar() {
+  const { pathname } = useRouter();
+  const { openNew } = useLiftForm();
+
   return (
-        <div className="d-flex flex-column flex-shrink-0 px-3 bg-dark-2 h-100">
-          <ul className="nav nav-pills flex-column mb-auto mt-4">
-            <li className="nav-item">
-              <Link href="/" className="nav-link active bg-primary-2 flex-between-center">
-                <span>Home</span>
-                <FontAwesomeIcon icon="fa-solid fa-house" />
+    <nav className="tk-sidebar" aria-label="Main">
+      <button type="button" className="tk-btn tk-btn-primary tk-btn-block" onClick={() => openNew()}>
+        <FontAwesomeIcon icon={faPlus} /> Log a lift
+      </button>
+      <ul className="tk-nav-list">
+        {NAV_ITEMS.map((item) => {
+          const active = pathname === item.href;
+          return (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                className={`tk-nav-link${active ? ' active' : ''}`}
+                aria-current={active ? 'page' : undefined}
+              >
+                <FontAwesomeIcon icon={item.icon} fixedWidth />
+                {item.label}
               </Link>
             </li>
-            <li>
-              <Link href="/stats" className="nav-link flex-between-center">
-                <span>Statistics</span>
-                <FontAwesomeIcon icon="fa-solid fa-chart-line" />
-              </Link>
-            </li>
-          </ul>
-      </div>
-    )
+          );
+        })}
+      </ul>
+      <p className="tk-sidebar-tip">
+        Press <kbd>N</kbd> to log a lift
+      </p>
+    </nav>
+  );
 }
 
 export default Sidebar;

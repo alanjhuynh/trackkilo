@@ -1,92 +1,89 @@
+import mongoose from 'mongoose';
 import dbConnect from '../../../lib/dbConnect';
 import Lift from '../../../models/Lift';
 import Set from '../../../models/Set';
-import { each, size } from 'lodash';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from '../auth/[...nextauth]';
+import { getUserId } from '../../../lib/auth';
+import { parseLiftPayload, serializeLift } from '../../../lib/liftPayload';
+
+const PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 50;
 
 export default async function handler(req, res) {
-  const { method } = req;
-  const PAGE_SIZE = 12;
+  const userId = await getUserId(req, res);
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
 
-  await dbConnect()
+  await dbConnect();
 
-  switch (method) {
+  switch (req.method) {
     case 'GET':
       try {
-        const session = await getServerSession(req, res, authOptions)
-        if(!session) {
-          return {
-            redirect: {
-              destination: '/login',
-            }
+        const { before, beforeId } = req.query;
+        const limit = Math.min(Number(req.query.limit) || PAGE_SIZE, MAX_PAGE_SIZE);
+        const query = { userId };
+
+        // Cursor pagination: continue after the last lift of the previous page.
+        // Unlike page offsets, this doesn't skip or repeat lifts after adds/deletes.
+        if (before && beforeId && mongoose.isValidObjectId(beforeId)) {
+          const date = new Date(before);
+          if (!Number.isNaN(date.getTime())) {
+            query.$or = [
+              { date: { $lt: date } },
+              { date, _id: { $lt: new mongoose.Types.ObjectId(beforeId) } },
+            ];
           }
         }
 
-        const { page } = req.query;
+        const lifts = await Lift.find(query)
+          .sort({ date: -1, _id: -1 })
+          .limit(limit + 1)
+          .lean();
+        const hasMore = lifts.length > limit;
+        const page = lifts.slice(0, limit);
 
-        let result = await Lift.find({userId: session.userId})
-          .sort({date: -1, createdAt: -1})
-          .limit(PAGE_SIZE)
-          .skip(PAGE_SIZE * (page - 1))
-        let lifts = result.map((doc) => {
-          const lift = doc.toObject()
-          lift._id = lift._id.toString()
-          lift.date = lift.date.toString()
-          return lift
-        })
+        const sets = await Set.find({
+          userId,
+          liftId: { $in: page.map((lift) => lift._id.toString()) },
+        }).lean();
+        const setsByLift = {};
+        sets.forEach((set) => {
+          (setsByLift[set.liftId] ||= []).push(set);
+        });
 
-        for (let i = 0; i < lifts.length; i++){
-          let result = await Set.find({
-            liftId: lifts[i]._id,
-            userId: session.userId,
-          });
-          let sets = result.map((doc) => {
-            const set = doc.toObject();
-            set._id = set._id.toString();
-            return set;
-          })
-
-          let targetSets = {};
-          each(sets, (set) => {
-            targetSets[set.index] = set;
-          })
-          lifts[i].sets = targetSets;    
-        }
-        res.status(200).json({ success: true, data: lifts })
+        res.status(200).json({
+          success: true,
+          data: page.map((lift) => serializeLift(lift, setsByLift[lift._id.toString()])),
+          hasMore,
+        });
       } catch (error) {
-        res.status(400).json({ success: false })
+        console.error('Failed to get lifts', error);
+        res.status(500).json({ success: false });
       }
-      break
-    case 'POST':
+      break;
+
+    case 'POST': {
+      const parsed = parseLiftPayload(req.body);
+      if (parsed.error) {
+        return res.status(400).json({ success: false, message: parsed.error });
+      }
+
       try {
-        const session = await getServerSession(req, res, authOptions)
-        if (session.userId != req.body.liftForm.userId){
-          res.status(400).json({success: false});
-          return;
-        }
-
-        const lift = await Lift.create(
-          req.body.liftForm
-        ) /* create a new model in the database */
-        let sets = {};
-        for (let i = 1; i < size(req.body.setForm) + 1; i++) {
-            let set = req.body.setForm[i];
-            if (session.userId != set.userId)
-              continue;
-
-            set.liftId = lift._id;
-            let targetSet = await Set.create(set);
-            sets[targetSet.index] = targetSet;
-        }
-      
-        res.status(201).json({ success: true, data: {lift, sets} })
+        const lift = await Lift.create({ ...parsed.lift, userId });
+        const sets = await Set.insertMany(
+          parsed.sets.map((set) => ({ ...set, userId, liftId: lift._id.toString() }))
+        );
+        res.status(201).json({ success: true, data: serializeLift(lift, sets) });
       } catch (error) {
-        res.status(400).json({ success: false })
+        console.error('Failed to create lift', error);
+        res.status(500).json({ success: false });
       }
-      break
+      break;
+    }
+
     default:
-      res.status(400).json({ success: false })
-      break
+      res.setHeader('Allow', ['GET', 'POST']);
+      res.status(405).json({ success: false });
+      break;
   }
 }

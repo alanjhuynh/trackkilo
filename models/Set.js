@@ -29,4 +29,7 @@ const SetSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
+SetSchema.index({ liftId: 1, index: 1 });
+SetSchema.index({ userId: 1 });
+
 export default mongoose.models.Set || mongoose.model('Set', SetSchema)

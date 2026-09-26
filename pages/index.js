@@ -1,135 +1,188 @@
-import { useRouter } from 'next/router'
+import { useEffect, useMemo, useRef } from 'react';
+import Head from 'next/head';
 import { useSession } from 'next-auth/react';
-import Card from '../components/Card';
-import { chunk, cloneDeep, each, isEmpty, set } from 'lodash';
-import Subheader from '../components/Subheader';
-import Sidebar from '../components/Sidebar';
-import { FontAwesomeIcon } from '../node_modules/@fortawesome/react-fontawesome/index';
-import { LiftContext, LiftProvider } from '../components/LiftProvider';
-import { useContext, useEffect, useState } from 'react';
-import InfiniteScroll from 'react-infinite-scroll-component';
-import moment from 'moment';
-import { Toaster } from 'react-hot-toast';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBolt, faDumbbell, faPlus } from '@fortawesome/free-solid-svg-icons';
+import LiftCard from '../components/LiftCard';
+import { useLifts } from '../components/LiftProvider';
+import { useLiftForm } from '../components/LiftFormProvider';
+import useExercises from '../lib/useExercises';
+import { dayKey, describeDay, plural } from '../lib/format';
+
+const QUICK_LOG_COUNT = 8;
+const SKELETON_CARDS = 3;
+
+function greeting(name) {
+  const hour = new Date().getHours();
+  const part = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const first = name?.split(' ')[0];
+  return first ? `${part}, ${first}` : part;
+}
+
+// Within a day, show lifts in the order they were logged
+const byCreation = (a, b) =>
+  new Date(a.createdAt || 0) - new Date(b.createdAt || 0) || a._id.localeCompare(b._id);
+
+function groupByDay(lifts) {
+  const days = new Map();
+  lifts.forEach((lift) => {
+    const key = dayKey(lift.date);
+    if (!days.has(key)) days.set(key, []);
+    days.get(key).push(lift);
+  });
+
+  return [...days.entries()]
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([key, dayLifts]) => ({
+      key,
+      lifts: dayLifts.sort(byCreation),
+      setCount: dayLifts.reduce((sum, lift) => sum + (lift.sets.length || lift.set || 0), 0),
+    }));
+}
+
+function DaySection({ day, prLiftIds }) {
+  const { label, detail } = describeDay(day.key);
+  return (
+    <section className="tk-day" aria-labelledby={`day-${day.key}`}>
+      <header className="tk-day-header">
+        <h2 id={`day-${day.key}`} className="tk-day-title">
+          {label}
+          {detail && <span className="tk-day-date">{detail}</span>}
+        </h2>
+        <span className="tk-day-meta">
+          {plural(day.lifts.length, 'lift')} · {plural(day.setCount, 'set')}
+        </span>
+      </header>
+      <div className="tk-lift-grid">
+        {day.lifts.map((lift) => (
+          <LiftCard key={lift._id} lift={lift} isPR={prLiftIds.has(lift._id)} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function FeedSkeleton() {
+  return (
+    <div className="tk-day" aria-busy="true" aria-label="Loading lifts">
+      <div className="tk-day-header">
+        <span className="tk-skeleton" style={{ width: 120, height: 20 }} />
+      </div>
+      <div className="tk-lift-grid">
+        {Array.from({ length: SKELETON_CARDS }, (_, i) => (
+          <div key={i} className="tk-card tk-lift-card tk-lift-card-skeleton">
+            <span className="tk-skeleton" style={{ width: '55%', height: 18 }} />
+            <span className="tk-skeleton" style={{ width: '35%', height: 14 }} />
+            <span className="tk-skeleton" style={{ width: '100%', height: 14 }} />
+            <span className="tk-skeleton" style={{ width: '100%', height: 14 }} />
+            <span className="tk-skeleton" style={{ width: '100%', height: 14 }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ onAdd }) {
+  return (
+    <div className="tk-empty">
+      <div className="tk-empty-icon"><FontAwesomeIcon icon={faDumbbell} /></div>
+      <h2 className="tk-empty-title">No lifts yet</h2>
+      <p className="tk-empty-text">Log your first lift and it will show up here, grouped by day.</p>
+      <button type="button" className="tk-btn tk-btn-primary" onClick={onAdd}>
+        <FontAwesomeIcon icon={faPlus} /> Log a lift
+      </button>
+    </div>
+  );
+}
 
 const Index = () => {
-  const contentType = 'application/json';
-  const router = useRouter();
-  const { data: session, status } = useSession({required: true});
-  const [state, setState] = useContext(LiftContext);
-  const [isGetting, setIsGetting] = useState(false); //TODO: remove
+  const { data: session } = useSession();
+  const { lifts, hasMore, status, initialized, loadMore } = useLifts();
+  const { exercises, prLiftIds } = useExercises();
+  const { openNew } = useLiftForm();
+  const sentinelRef = useRef(null);
 
-  // const [items, setItems] = useState([]);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-
-  const getData = async () => {
-    try {
-      let params = new URLSearchParams({
-        page
-      });
-      const res = await fetch(`/api/lifts?${params}`, {
-          method: 'GET',
-          headers: {
-          Accept: contentType,
-          'Content-Type': contentType,
-          },
-      })
-      const data = await res.json();
-
-      if (!data.success) {
-          throw new Error();
-      }
-
-      if (data.data.length === 0) {
-        setHasMore(false);
-      } else {
-        setState([...state, ...data.data]);
-        setIsGetting(false);
-        setPage(page + 1);
-      }
-    } catch (error) {
-      setIsGetting(false);
-      console.log('Failed to get lifts');
-    }
-}
+  const days = useMemo(() => groupByDay(lifts), [lifts]);
 
   useEffect(() => {
-    if (isEmpty(state)){
-        setIsGetting(true);
-        getData();
-    }
-  }, [page]);
+    if (!initialized) loadMore();
+  }, [initialized, loadMore]);
 
-  state.sort((a, b) => new Date(b.date) - new Date(a.date));
-  
-  let liftsByDate = state.reduce((group, lift) => {
-    let date = moment(new Date(lift.date))
-    // Display day only if within the week
-    // Otherwise, display day and date
-    // Only display year if not within the year
-    date = date.isBetween(moment().startOf('week'), moment().endOf('week')) ? date.format('dddd') :
-    date.isBetween(moment().startOf('year'), moment().endOf('year')) ? date.format('dddd, MMMM D') : date.format('LL');
-    
-    if (!group[date]) {
-      group[date] = [];
-    }
-    group[date].push(lift);
-    return group;
-  }, {});
+  // Load the next page as the end of the list comes into view. Re-observing
+  // after each load keeps loading while the list is shorter than the screen.
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !initialized || !hasMore || status !== 'idle') return undefined;
 
-  for (let date in liftsByDate) {
-    liftsByDate[date].sort((a, b) => new Date(a.date) - new Date(b.date));
-  }
-
-  let cardsByDate = [];
-  each (liftsByDate, (lifts, date) => {
-    let liftsEl = lifts.map((lift) => (
-      <div key={lift._id} className="col-sm-4 g-2">
-        <Card lift={lift} isNew={ false}></Card>
-      </div>
-    ));
-    cardsByDate.push(
-      <div key={date} className="row mb-5">
-        <h3 className="">{date}</h3>
-        {liftsEl}
-      </div>
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore(); },
+      { rootMargin: '800px 0px' },
     );
-  })
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [initialized, hasMore, status, loadMore]);
 
-  if (status === 'authenticated'){
-    return (
-      <>
-        <div className="d-none d-sm-block col-sm-2 p-0">
-          <Sidebar></Sidebar>
+  const isEmpty = initialized && lifts.length === 0 && !hasMore;
+
+  return (
+    <div className="tk-page">
+      <Head>
+        <title>Log · trackkilo</title>
+      </Head>
+
+      <header className="tk-page-header">
+        <div>
+          <p className="tk-eyebrow">{greeting(session?.user?.name)}</p>
+          <h1 className="tk-page-title">Training log</h1>
         </div>
-        <div className="col col-sm-10 p-0 bg-dark-2">
-          <div className={isGetting ? "text-center" : "my-4 mx-5"}>
-            <Subheader></Subheader>
-            {/* Create a card for each lift */}
-            <InfiniteScroll
-              dataLength={state.length}
-              next={getData}
-              hasMore={hasMore}
-              loader={<div className="spinner-grow"></div>}
-              endMessage={
-                isEmpty(state) ? 
-                <div className="flex-center row text-center">
-                  <FontAwesomeIcon icon="fa-solid fa-dumbbell" size="10x" />
-                  <div><h2>No lifts found</h2></div>
-                </div> : ''
-              }
-              scrollableTarget="main"
-              className="p-2"
-            >
-              {cardsByDate}
-            </InfiniteScroll>
-            
+      </header>
+
+      {exercises.length > 0 && (
+        <section className="tk-quick-log" aria-labelledby="quick-log-title">
+          <h2 id="quick-log-title" className="tk-section-label">
+            <FontAwesomeIcon icon={faBolt} /> Quick log
+          </h2>
+          <div className="tk-chip-row">
+            {exercises.slice(0, QUICK_LOG_COUNT).map((exercise) => (
+              <button
+                key={exercise.name}
+                type="button"
+                className="tk-chip"
+                onClick={() => openNew({ name: exercise.name })}
+              >
+                <FontAwesomeIcon icon={faPlus} className="tk-chip-icon" />
+                {exercise.name}
+              </button>
+            ))}
           </div>
-        </div>
-        <Toaster />
-      </>
-    )
-  } 
-}
+        </section>
+      )}
 
-export default Index
+      {!initialized && <FeedSkeleton />}
+      {isEmpty && <EmptyState onAdd={() => openNew()} />}
+      {days.map((day) => (
+        <DaySection key={day.key} day={day} prLiftIds={prLiftIds} />
+      ))}
+
+      {initialized && hasMore && status !== 'error' && (
+        <div ref={sentinelRef} className="tk-feed-status">
+          {status === 'loading' && (
+            <span className="spinner-border spinner-border-sm" role="status" aria-label="Loading more lifts" />
+          )}
+        </div>
+      )}
+      {status === 'error' && (
+        <div className="tk-feed-status" role="alert">
+          <p className="mb-0">Couldn&apos;t load your lifts.</p>
+          <button type="button" className="tk-btn tk-btn-secondary" onClick={loadMore}>Try again</button>
+        </div>
+      )}
+      {initialized && !hasMore && lifts.length > 0 && (
+        <p className="tk-feed-end">That&apos;s everything. You&apos;ve reached your first lift.</p>
+      )}
+    </div>
+  );
+};
+
+export default Index;

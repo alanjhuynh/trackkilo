@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import moment from 'moment';
 
 const LiftSchema = new mongoose.Schema({
   userId: {
@@ -8,7 +7,8 @@ const LiftSchema = new mongoose.Schema({
   },
   name: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   set: {
     type: Number,
@@ -23,14 +23,11 @@ const LiftSchema = new mongoose.Schema({
   },
   date: {
     type: Date,
-    default: moment().format('YYYY-MM-DD'),
+    default: Date.now,
   },
 }, { timestamps: true });
 
-// LiftSchema.pre('save', function(next) {
-//   // save as UTC
-//   this.date = moment(this.date, 'YYYY-MM-DD').utc().format('YYYY-MM-DD HH:mm')
-//   next();
-// });
+// Matches the log's sort order and cursor pagination
+LiftSchema.index({ userId: 1, date: -1, _id: -1 });
 
 export default mongoose.models.Lift || mongoose.model('Lift', LiftSchema)

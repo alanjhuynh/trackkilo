@@ -1,8 +1,8 @@
-import { useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
-import Sidebar from '../components/Sidebar';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import Head from 'next/head';
+import useSWR from 'swr';
 import moment from 'moment';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChartLine, faPlus, faTrophy } from '@fortawesome/free-solid-svg-icons';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -16,6 +16,9 @@ import {
   Filler,
 } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
+import { useLiftForm } from '../components/LiftFormProvider';
+import { STATS_KEY, fetcher } from '../lib/api';
+import { formatWeight } from '../lib/format';
 
 ChartJS.register(
   CategoryScale,
@@ -29,94 +32,121 @@ ChartJS.register(
   Filler
 );
 
+ChartJS.defaults.font.family = "Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+ChartJS.defaults.color = '#9aa4af';
+
+const chartColors = {
+  primary: 'rgb(59, 113, 159)',
+  primaryFaded: 'rgba(59, 113, 159, 0.25)',
+  grid: 'rgba(255, 255, 255, 0.06)',
+};
+
+const commonChartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: { display: false },
+    tooltip: {
+      backgroundColor: '#262b31',
+      borderColor: '#353c45',
+      borderWidth: 1,
+      padding: 10,
+      displayColors: false,
+    },
+  },
+  scales: {
+    x: {
+      ticks: { maxRotation: 0, autoSkipPadding: 12 },
+      grid: { display: false },
+    },
+    y: {
+      grid: { color: chartColors.grid },
+      border: { display: false },
+      beginAtZero: true,
+    },
+  },
+};
+
+const formatVolume = (vol) => {
+  if (vol >= 1000000) return `${(vol / 1000000).toFixed(1)}M`;
+  if (vol >= 1000) return `${(vol / 1000).toFixed(1)}K`;
+  return vol.toLocaleString();
+};
+
+const weekLabel = (week) => moment(week).format('MMM D');
+
+function StatTile({ label, value }) {
+  return (
+    <div className="tk-card tk-stat">
+      <p className="tk-stat-label">{label}</p>
+      <p className="tk-stat-value">{value}</p>
+    </div>
+  );
+}
+
+function Panel({ title, children }) {
+  return (
+    <section className="tk-card tk-panel">
+      <h2 className="tk-panel-title">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function PageHeader() {
+  return (
+    <header className="tk-page-header">
+      <div>
+        <p className="tk-eyebrow">Your training at a glance</p>
+        <h1 className="tk-page-title">Statistics</h1>
+      </div>
+    </header>
+  );
+}
+
 const Stats = () => {
-  const { data: session, status } = useSession({ required: true });
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data: stats, error, isLoading, mutate } = useSWR(STATS_KEY, fetcher, { revalidateOnFocus: false });
+  const { openNew } = useLiftForm();
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch('/api/stats');
-        const data = await res.json();
-        if (data.success) {
-          setStats(data.data);
-        }
-      } catch (error) {
-        console.log('Failed to fetch stats');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (status === 'authenticated') {
-      fetchStats();
-    }
-  }, [status]);
-
-  const formatVolume = (vol) => {
-    if (vol >= 1000000) return `${(vol / 1000000).toFixed(1)}M`;
-    if (vol >= 1000) return `${(vol / 1000).toFixed(1)}K`;
-    return vol.toLocaleString();
-  };
-
-  const chartColors = {
-    primary: 'rgb(59, 113, 159)',
-    primaryFaded: 'rgba(59, 113, 159, 0.3)',
-    grid: 'rgba(255, 255, 255, 0.1)',
-    text: 'rgba(255, 255, 255, 0.7)',
-  };
-
-  const commonChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-    },
-    scales: {
-      x: {
-        ticks: { color: chartColors.text, maxRotation: 45 },
-        grid: { color: chartColors.grid },
-      },
-      y: {
-        ticks: { color: chartColors.text },
-        grid: { color: chartColors.grid },
-        beginAtZero: true,
-      },
-    },
-  };
-
-  if (status !== 'authenticated') return null;
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <>
-        <div className="d-none d-sm-block col-sm-2 p-0">
-          <Sidebar />
+      <div className="tk-page">
+        <Head><title>Stats · trackkilo</title></Head>
+        <PageHeader />
+        <div className="tk-feed-status">
+          <span className="spinner-border spinner-border-sm" role="status" aria-label="Loading statistics" />
         </div>
-        <div className="col col-sm-10 p-0 bg-dark-2">
-          <div className="flex-center p-5">
-            <div className="spinner-grow"></div>
-          </div>
+      </div>
+    );
+  }
+
+  if (error && !stats) {
+    return (
+      <div className="tk-page">
+        <Head><title>Stats · trackkilo</title></Head>
+        <PageHeader />
+        <div className="tk-feed-status" role="alert">
+          <p className="mb-0">Couldn&apos;t load your statistics.</p>
+          <button type="button" className="tk-btn tk-btn-secondary" onClick={() => mutate()}>Try again</button>
         </div>
-      </>
+      </div>
     );
   }
 
   if (!stats || stats.totalLifts === 0) {
     return (
-      <>
-        <div className="d-none d-sm-block col-sm-2 p-0">
-          <Sidebar />
+      <div className="tk-page">
+        <Head><title>Stats · trackkilo</title></Head>
+        <PageHeader />
+        <div className="tk-empty">
+          <div className="tk-empty-icon"><FontAwesomeIcon icon={faChartLine} /></div>
+          <h2 className="tk-empty-title">No data yet</h2>
+          <p className="tk-empty-text">Log some lifts to see your statistics.</p>
+          <button type="button" className="tk-btn tk-btn-primary" onClick={() => openNew()}>
+            <FontAwesomeIcon icon={faPlus} /> Log a lift
+          </button>
         </div>
-        <div className="col col-sm-10 p-0 bg-dark-2">
-          <div className="flex-center flex-column p-5">
-            <FontAwesomeIcon icon="fa-solid fa-chart-line" size="10x" />
-            <h2 className="mt-4">No data yet</h2>
-            <p className="text-muted">Log some lifts to see your statistics</p>
-          </div>
-        </div>
-      </>
+      </div>
     );
   }
 
@@ -128,14 +158,13 @@ const Stats = () => {
         data: stats.topExercises.map((e) => e.count),
         backgroundColor: chartColors.primary,
         borderRadius: 4,
+        maxBarThickness: 22,
       },
     ],
   };
 
   const volumeChartData = {
-    labels: stats.volumeOverTime.map((w) =>
-      moment(w.week).format('MMM D')
-    ),
+    labels: stats.volumeOverTime.map((w) => weekLabel(w.week)),
     datasets: [
       {
         data: stats.volumeOverTime.map((w) => w.volume),
@@ -143,21 +172,20 @@ const Stats = () => {
         backgroundColor: chartColors.primaryFaded,
         fill: true,
         tension: 0.3,
-        pointRadius: 4,
+        pointRadius: 3,
         pointBackgroundColor: chartColors.primary,
       },
     ],
   };
 
   const workoutFreqData = {
-    labels: stats.workoutFrequency.map((w) =>
-      moment(w.week).format('MMM D')
-    ),
+    labels: stats.workoutFrequency.map((w) => weekLabel(w.week)),
     datasets: [
       {
         data: stats.workoutFrequency.map((w) => w.count),
         backgroundColor: chartColors.primary,
         borderRadius: 4,
+        maxBarThickness: 32,
       },
     ],
   };
@@ -168,135 +196,80 @@ const Stats = () => {
       ...commonChartOptions.scales,
       y: {
         ...commonChartOptions.scales.y,
-        ticks: {
-          ...commonChartOptions.scales.y.ticks,
-          stepSize: 1,
-        },
+        ticks: { stepSize: 1 },
+      },
+    },
+  };
+
+  const exerciseChartOptions = {
+    ...commonChartOptions,
+    indexAxis: 'y',
+    scales: {
+      x: {
+        ticks: { stepSize: 1 },
+        grid: { color: chartColors.grid },
+        border: { display: false },
+        beginAtZero: true,
+      },
+      y: {
+        grid: { display: false },
       },
     },
   };
 
   return (
-    <>
-      <div className="d-none d-sm-block col-sm-2 p-0">
-        <Sidebar />
+    <div className="tk-page">
+      <Head><title>Stats · trackkilo</title></Head>
+      <PageHeader />
+
+      <div className="tk-stat-grid">
+        <StatTile label="Workouts" value={stats.totalWorkouts.toLocaleString()} />
+        <StatTile label="Lifts" value={stats.totalLifts.toLocaleString()} />
+        <StatTile label="Sets" value={stats.totalSets.toLocaleString()} />
+        <StatTile label="Total volume" value={`${formatVolume(stats.totalVolume)} lb`} />
       </div>
-      <div className="col col-sm-10 p-0 bg-dark-2">
-        <div className="my-4 mx-5">
-          <h2 className="mb-4">Statistics</h2>
 
-          {/* Summary Cards */}
-          <div className="row g-3 mb-4">
-            <div className="col-6 col-md-3">
-              <div className="stat-card bg-dark rounded p-3 h-100">
-                <p className="text-muted mb-1 stat-label">Workouts</p>
-                <h3 className="mb-0">{stats.totalWorkouts}</h3>
-              </div>
-            </div>
-            <div className="col-6 col-md-3">
-              <div className="stat-card bg-dark rounded p-3 h-100">
-                <p className="text-muted mb-1 stat-label">Lifts</p>
-                <h3 className="mb-0">{stats.totalLifts}</h3>
-              </div>
-            </div>
-            <div className="col-6 col-md-3">
-              <div className="stat-card bg-dark rounded p-3 h-100">
-                <p className="text-muted mb-1 stat-label">Sets</p>
-                <h3 className="mb-0">{stats.totalSets}</h3>
-              </div>
-            </div>
-            <div className="col-6 col-md-3">
-              <div className="stat-card bg-dark rounded p-3 h-100">
-                <p className="text-muted mb-1 stat-label">Total Volume</p>
-                <h3 className="mb-0">{formatVolume(stats.totalVolume)} lb</h3>
-              </div>
-            </div>
+      <div className="tk-panel-grid">
+        <Panel title="Weekly volume">
+          <div className="tk-chart">
+            <Line data={volumeChartData} options={commonChartOptions} />
           </div>
-
-          {/* Charts Row */}
-          <div className="row g-3 mb-4">
-            <div className="col-md-6">
-              <div className="bg-dark rounded p-3">
-                <h5 className="mb-3">Weekly Volume</h5>
-                <div style={{ height: '250px' }}>
-                  <Line data={volumeChartData} options={commonChartOptions} />
-                </div>
-              </div>
-            </div>
-            <div className="col-md-6">
-              <div className="bg-dark rounded p-3">
-                <h5 className="mb-3">Workouts Per Week</h5>
-                <div style={{ height: '250px' }}>
-                  <Bar data={workoutFreqData} options={workoutFreqOptions} />
-                </div>
-              </div>
-            </div>
+        </Panel>
+        <Panel title="Workouts per week">
+          <div className="tk-chart">
+            <Bar data={workoutFreqData} options={workoutFreqOptions} />
           </div>
+        </Panel>
+      </div>
 
-          {/* Top Exercises Chart */}
-          <div className="row g-3 mb-4">
-            <div className="col-12">
-              <div className="bg-dark rounded p-3">
-                <h5 className="mb-3">Top Exercises</h5>
-                <div style={{ height: '250px' }}>
-                  <Bar
-                    data={exerciseChartData}
-                    options={{
-                      ...commonChartOptions,
-                      indexAxis: 'y',
-                      scales: {
-                        x: {
-                          ticks: { color: chartColors.text, stepSize: 1 },
-                          grid: { color: chartColors.grid },
-                          beginAtZero: true,
-                        },
-                        y: {
-                          ticks: { color: chartColors.text },
-                          grid: { display: false },
-                        },
-                      },
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
+      <div className="tk-panel-grid">
+        <Panel title="Top exercises">
+          <div className="tk-chart" style={{ height: Math.max(160, stats.topExercises.length * 32 + 40) }}>
+            <Bar data={exerciseChartData} options={exerciseChartOptions} />
           </div>
+        </Panel>
 
-          {/* Personal Records Table */}
-          {stats.personalRecords.length > 0 && (
-            <div className="row g-3 mb-4">
-              <div className="col-12">
-                <div className="bg-dark rounded p-3">
-                  <h5 className="mb-3">Personal Records</h5>
-                  <div className="table-responsive">
-                    <table className="table table-dark table-hover mb-0">
-                      <thead>
-                        <tr className="text-muted">
-                          <th>Exercise</th>
-                          <th>Weight</th>
-                          <th>Reps</th>
-                          <th>Date</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {stats.personalRecords.map((pr) => (
-                          <tr key={pr.name}>
-                            <td>{pr.name}</td>
-                            <td>{pr.weight} {pr.metric}</td>
-                            <td>{pr.reps}</td>
-                            <td>{moment(pr.date).format('MMM D, YYYY')}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+        {stats.personalRecords.length > 0 && (
+          <Panel title="Personal records">
+            <ul className="tk-pr-list">
+              {stats.personalRecords.map((pr) => (
+                <li key={pr.name} className="tk-pr-row">
+                  <span className="tk-pr-icon"><FontAwesomeIcon icon={faTrophy} /></span>
+                  <div className="tk-pr-name">
+                    {pr.name}
+                    <span className="tk-pr-date">{moment(pr.date).format('MMM D, YYYY')}</span>
                   </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+                  <div className="tk-pr-value">
+                    {formatWeight(pr.weight, pr.metric)}
+                    <span> × {pr.reps}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        )}
       </div>
-    </>
+    </div>
   );
 };
 
