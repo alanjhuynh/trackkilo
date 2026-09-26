@@ -16,9 +16,12 @@ import {
   Filler,
 } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
+import KindIcon from '../components/KindIcon';
 import { useLiftForm } from '../components/LiftFormProvider';
 import { STATS_KEY, fetcher } from '../lib/api';
 import { formatWeight } from '../lib/format';
+import { cardioKind, formatDistance, formatHours, fromKm } from '../lib/activities';
+import { usePreferredUnits } from '../lib/prefs';
 
 ChartJS.register(
   CategoryScale,
@@ -107,6 +110,7 @@ function PageHeader() {
 const Stats = () => {
   const { data: stats, error, isLoading, mutate } = useSWR(STATS_KEY, fetcher, { revalidateOnFocus: false });
   const { openNew } = useLiftForm();
+  const { distance: distanceUnit } = usePreferredUnits();
 
   if (isLoading) {
     return (
@@ -133,7 +137,7 @@ const Stats = () => {
     );
   }
 
-  if (!stats || stats.totalLifts === 0) {
+  if (!stats || !(stats.totalEntries ?? stats.totalLifts)) {
     return (
       <div className="tk-page">
         <Head><title>Stats · trackkilo</title></Head>
@@ -141,7 +145,7 @@ const Stats = () => {
         <div className="tk-empty">
           <div className="tk-empty-icon"><FontAwesomeIcon icon={faChartLine} /></div>
           <h2 className="tk-empty-title">No data yet</h2>
-          <p className="tk-empty-text">Log some lifts to see your statistics.</p>
+          <p className="tk-empty-text">Log some workouts to see your statistics.</p>
           <button type="button" className="tk-btn tk-btn-primary" onClick={() => openNew()}>
             <FontAwesomeIcon icon={faPlus} /> Log a lift
           </button>
@@ -149,6 +153,9 @@ const Stats = () => {
       </div>
     );
   }
+
+  // Volume, top exercises and PRs only make sense once there are lifts
+  const hasLifts = stats.totalLifts > 0;
 
   // --- Chart data ---
   const exerciseChartData = {
@@ -230,11 +237,13 @@ const Stats = () => {
       </div>
 
       <div className="tk-panel-grid">
-        <Panel title="Weekly volume">
-          <div className="tk-chart">
-            <Line data={volumeChartData} options={commonChartOptions} />
-          </div>
-        </Panel>
+        {hasLifts && (
+          <Panel title="Weekly volume">
+            <div className="tk-chart">
+              <Line data={volumeChartData} options={commonChartOptions} />
+            </div>
+          </Panel>
+        )}
         <Panel title="Workouts per week">
           <div className="tk-chart">
             <Bar data={workoutFreqData} options={workoutFreqOptions} />
@@ -242,33 +251,59 @@ const Stats = () => {
         </Panel>
       </div>
 
-      <div className="tk-panel-grid">
-        <Panel title="Top exercises">
-          <div className="tk-chart" style={{ height: Math.max(160, stats.topExercises.length * 32 + 40) }}>
-            <Bar data={exerciseChartData} options={exerciseChartOptions} />
+      {stats.cardio?.length > 0 && (
+        <Panel title="Runs, walks and rides">
+          <div className="tk-cardio-totals">
+            {stats.cardio.map((totals) => {
+              const kind = cardioKind(totals.kind);
+              return (
+                <div key={totals.kind} className={`tk-cardio-total tk-kind-${totals.kind}`}>
+                  <div className="tk-cardio-total-head">
+                    <span className="tk-kind-badge"><KindIcon kind={totals.kind} /></span>
+                    {kind.plural.charAt(0).toUpperCase() + kind.plural.slice(1)}
+                  </div>
+                  <dl className="tk-cardio-stats">
+                    <div><dt>Sessions</dt><dd>{totals.count.toLocaleString()}</dd></div>
+                    <div><dt>Distance</dt><dd>{formatDistance(fromKm(totals.distanceKm, distanceUnit), distanceUnit)}</dd></div>
+                    <div><dt>Time</dt><dd>{formatHours(totals.duration)}</dd></div>
+                    <div><dt>Longest</dt><dd>{formatDistance(fromKm(totals.longestKm, distanceUnit), distanceUnit)}</dd></div>
+                  </dl>
+                </div>
+              );
+            })}
           </div>
         </Panel>
+      )}
 
-        {stats.personalRecords.length > 0 && (
-          <Panel title="Personal records">
-            <ul className="tk-pr-list">
-              {stats.personalRecords.map((pr) => (
-                <li key={pr.name} className="tk-pr-row">
-                  <span className="tk-pr-icon"><FontAwesomeIcon icon={faTrophy} /></span>
-                  <div className="tk-pr-name">
-                    {pr.name}
-                    <span className="tk-pr-date">{moment(pr.date).format('MMM D, YYYY')}</span>
-                  </div>
-                  <div className="tk-pr-value">
-                    {formatWeight(pr.weight, pr.metric)}
-                    <span> × {pr.reps}</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
+      {hasLifts && (
+        <div className="tk-panel-grid">
+          <Panel title="Top exercises">
+            <div className="tk-chart" style={{ height: Math.max(160, stats.topExercises.length * 32 + 40) }}>
+              <Bar data={exerciseChartData} options={exerciseChartOptions} />
+            </div>
           </Panel>
-        )}
-      </div>
+
+          {stats.personalRecords.length > 0 && (
+            <Panel title="Personal records">
+              <ul className="tk-pr-list">
+                {stats.personalRecords.map((pr) => (
+                  <li key={pr.name} className="tk-pr-row">
+                    <span className="tk-pr-icon"><FontAwesomeIcon icon={faTrophy} /></span>
+                    <div className="tk-pr-name">
+                      {pr.name}
+                      <span className="tk-pr-date">{moment(pr.date).format('MMM D, YYYY')}</span>
+                    </div>
+                    <div className="tk-pr-value">
+                      {formatWeight(pr.weight, pr.metric)}
+                      <span> × {pr.reps}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -3,6 +3,7 @@ import Lift from '../../models/Lift';
 import SetModel from '../../models/Set';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from './auth/[...nextauth]';
+import { CARDIO_KEYS, isCardio, toKm } from '../../lib/activities';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -19,8 +20,11 @@ export default async function handler(req, res) {
 
     const userId = session.userId;
 
-    // Fetch all lifts and sets for this user
-    const lifts = await Lift.find({ userId }).sort({ date: -1 }).lean();
+    // Fetch all log entries and sets for this user. Lift stats use lifts only;
+    // workout counts include runs, walks and rides.
+    const entries = await Lift.find({ userId }).sort({ date: -1 }).lean();
+    const lifts = entries.filter((entry) => !isCardio(entry));
+    const cardioEntries = entries.filter(isCardio);
     const sets = await SetModel.find({ userId }).lean();
 
     // Build a map of sets by liftId
@@ -44,7 +48,7 @@ export default async function handler(req, res) {
 
     // Unique workout days
     const uniqueDays = {};
-    lifts.forEach((l) => {
+    entries.forEach((l) => {
       uniqueDays[new Date(l.date).toISOString().split('T')[0]] = true;
     });
     const totalWorkouts = Object.keys(uniqueDays).length;
@@ -111,7 +115,7 @@ export default async function handler(req, res) {
 
     // --- Workouts per week ---
     const workoutsPerWeek = {};
-    lifts.forEach((lift) => {
+    entries.forEach((lift) => {
       const date = new Date(lift.date);
       const day = date.getDay();
       const diff = date.getDate() - day + (day === 0 ? -6 : 1);
@@ -131,9 +135,23 @@ export default async function handler(req, res) {
       .slice(-12)
       .map(([week, days]) => ({ week, count: Object.keys(days).length }));
 
+    // --- Runs, walks and rides ---
+    const cardio = CARDIO_KEYS.map((kind) => {
+      const ofKind = cardioEntries.filter((entry) => entry.kind === kind);
+      return {
+        kind,
+        count: ofKind.length,
+        distanceKm: ofKind.reduce((sum, entry) => sum + toKm(entry.distance, entry.distanceUnit), 0),
+        duration: ofKind.reduce((sum, entry) => sum + (entry.duration || 0), 0),
+        longestKm: Math.max(0, ...ofKind.map((entry) => toKm(entry.distance, entry.distanceUnit))),
+      };
+    }).filter((totals) => totals.count);
+
     res.status(200).json({
       success: true,
       data: {
+        totalEntries: entries.length,
+        cardio,
         totalLifts,
         totalSets,
         totalVolume,

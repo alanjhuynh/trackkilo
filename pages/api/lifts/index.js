@@ -70,10 +70,11 @@ export default async function handler(req, res) {
 
       try {
         const lift = await Lift.create({ ...parsed.lift, userId });
-        const sets = await Set.insertMany(
-          parsed.sets.map((set) => ({ ...set, userId, liftId: lift._id.toString() }))
-        );
-        res.status(201).json({ success: true, data: serializeLift(lift, sets) });
+        // Runs, walks and rides have no sets
+        const sets = parsed.sets.length
+          ? await Set.insertMany(parsed.sets.map((set) => ({ ...set, userId, liftId: lift._id.toString() })))
+          : [];
+        res.status(201).json({ success: true, data: serializeLift(lift, sets), censored: parsed.censored });
       } catch (error) {
         console.error('Failed to create lift', error);
         res.status(500).json({ success: false });

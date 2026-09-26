@@ -6,12 +6,36 @@ import {
   faEllipsisVertical, faPenToSquare, faRotateRight, faTrashCan, faTrophy,
 } from '@fortawesome/free-solid-svg-icons';
 import ConfirmModal from './ConfirmModal';
+import KindIcon from './KindIcon';
 import { useLifts } from './LiftProvider';
 import { useLiftForm } from './LiftFormProvider';
 import { formatWeight, plural, summarizeSets } from '../lib/format';
+import {
+  cardioKind, formatDistance, formatDuration, formatPace, isCardio,
+} from '../lib/activities';
 
 // Longer lifts collapse to this many rows plus a "show more" link
 const COLLAPSED_SETS = 5;
+
+// Distance, time and pace (or speed) for a run, walk or ride
+function CardioStats({ entry }) {
+  const pace = formatPace(entry);
+  const stats = [
+    entry.distance ? ['Distance', formatDistance(entry.distance, entry.distanceUnit)] : null,
+    entry.duration ? ['Time', formatDuration(entry.duration)] : null,
+    pace ? [entry.kind === 'ride' ? 'Speed' : 'Pace', pace] : null,
+  ].filter(Boolean);
+  return (
+    <dl className="tk-cardio-stats">
+      {stats.map(([label, value]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 export default function LiftCard({ lift, isPR }) {
   const { openEdit, openRepeat } = useLiftForm();
@@ -21,6 +45,8 @@ export default function LiftCard({ lift, isPR }) {
   const [deleting, setDeleting] = useState(false);
 
   const { sets } = lift;
+  const cardio = isCardio(lift);
+  const noun = cardio ? cardioKind(lift.kind).label : 'Lift';
   const collapsed = !expanded && sets.length > COLLAPSED_SETS;
   const visibleSets = collapsed ? sets.slice(0, COLLAPSED_SETS - 1) : sets;
 
@@ -28,9 +54,9 @@ export default function LiftCard({ lift, isPR }) {
     setDeleting(true);
     try {
       await deleteLift(lift._id);
-      toast.success('Lift deleted');
+      toast.success(`${noun} deleted`);
     } catch (error) {
-      toast.error(error.message || 'Could not delete lift');
+      toast.error(error.message || 'Could not delete');
       setDeleting(false);
       setConfirming(false);
     }
@@ -39,11 +65,15 @@ export default function LiftCard({ lift, isPR }) {
   return (
     <>
       {/* Clicking anywhere on the card edits it; the menu offers the same for keyboard users */}
-      <article className="tk-card tk-lift-card" onClick={() => openEdit(lift)}>
+      <article className={`tk-card tk-lift-card${cardio ? ` tk-cardio-card tk-kind-${lift.kind}` : ''}`} onClick={() => openEdit(lift)}>
         <header className="tk-lift-card-header">
+          {cardio && <span className="tk-kind-badge"><KindIcon kind={lift.kind} /></span>}
           <div className="tk-lift-card-title">
             <h3 className="tk-lift-name">{lift.name}</h3>
-            <div className="tk-lift-summary">{summarizeSets(lift)}</div>
+            {/* Untitled runs are already named "Run" */}
+            {(!cardio || lift.name !== noun) && (
+              <div className="tk-lift-summary">{cardio ? noun : summarizeSets(lift)}</div>
+            )}
           </div>
           {isPR && (
             <span className="tk-pr-badge" title="Personal record">
@@ -68,6 +98,8 @@ export default function LiftCard({ lift, isPR }) {
             </Dropdown.Menu>
           </Dropdown>
         </header>
+
+        {cardio && <CardioStats entry={lift} />}
 
         {sets.length > 0 && (
           <ol className="tk-set-list">
@@ -107,7 +139,9 @@ export default function LiftCard({ lift, isPR }) {
         onConfirm={onDelete}
         onHide={() => setConfirming(false)}
       >
-        This removes the lift and its {plural(sets.length, 'set')}. It can&apos;t be undone.
+        {cardio
+          ? <>This removes the {noun.toLowerCase()} from your log. It can&apos;t be undone.</>
+          : <>This removes the lift and its {plural(sets.length, 'set')}. It can&apos;t be undone.</>}
       </ConfirmModal>
     </>
   );

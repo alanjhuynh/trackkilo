@@ -3,14 +3,19 @@ import Modal from 'react-bootstrap/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faClockRotateLeft, faPlus, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
 import toast from 'react-hot-toast';
+import CardioFields from './CardioFields';
+import KindIcon from './KindIcon';
 import LiftNameInput from './LiftNameInput';
 import Stepper from './Stepper';
 import { useLifts } from './LiftProvider';
 import useExercises from '../lib/useExercises';
 import { initFormState, liftFormReducer, toPayload, validateForm } from '../lib/liftForm';
 import { dayLabel, formatWeight, normalizeName, summarizeSets } from '../lib/format';
-import { getPreferredUnit, setPreferredUnit } from '../lib/prefs';
+import { getPreferredDistanceUnit, getPreferredUnit, setPreferredUnit } from '../lib/prefs';
 import { MAX_SETS, METRICS, toKg, topSet } from '../lib/sets';
+import { CARDIO_KINDS, cardioKind, isCardio } from '../lib/activities';
+
+const LIFT_KIND = { key: 'lift', label: 'Lift' };
 
 const DECIMAL = /^\d*\.?\d*$/;
 const INTEGER = /^\d*$/;
@@ -39,15 +44,35 @@ function LastSession({ entry, applied, onApply }) {
   );
 }
 
+// Lift / Run / Walk / Ride switch. A saved lift can't become a run, so editing
+// only offers the kinds it can switch between.
+function KindPicker({ options, value, onChange }) {
+  return (
+    <div className="tk-segmented tk-kind-picker" role="group" aria-label="Type of workout">
+      {options.map((kind) => (
+        <button key={kind.key} type="button" aria-pressed={value === kind.key} onClick={() => onChange(kind.key)}>
+          <KindIcon kind={kind.key} />
+          <span>{kind.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function LiftForm({ mode, lift, prefill, onClose }) {
   const isNew = mode === 'new';
   const [state, dispatch] = useReducer(
     liftFormReducer,
     { mode, lift, prefill },
-    (options) => initFormState(options, getPreferredUnit()),
+    (options) => initFormState(options, { weight: getPreferredUnit(), distance: getPreferredDistanceUnit() }),
   );
   const { createLift, updateLift, deleteLift } = useLifts();
-  const { exercises, byName } = useExercises();
+  const { exercises, byName, lastCardio } = useExercises();
+  const cardio = isCardio(state);
+  const kindLabel = cardio ? cardioKind(state.kind).label.toLowerCase() : 'lift';
+  let kindOptions = null;
+  if (isNew) kindOptions = [LIFT_KIND, ...CARDIO_KINDS];
+  else if (cardio) kindOptions = CARDIO_KINDS;
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -62,16 +87,16 @@ function LiftForm({ mode, lift, prefill, onClose }) {
 
   // Start on the name for a blank new lift (runs once; the form remounts per open)
   useEffect(() => {
-    if (isNew && !prefill?.name) nameRef.current?.focus();
+    if (isNew && !cardio && !prefill?.name) nameRef.current?.focus();
   }, []);
 
   // Until the user customizes the form, fill it from the chosen lift's last session
   useEffect(() => {
-    if (!isNew || !state.pristine) return;
+    if (!isNew || cardio || !state.pristine) return;
     if (normalizeName(state.committedName) === state.appliedKey) return;
     if (committedEntry) dispatch({ type: 'applyHistory', entry: committedEntry, auto: true });
     else if (state.appliedKey) dispatch({ type: 'resetDefaults' });
-  }, [isNew, state.pristine, state.committedName, state.appliedKey, committedEntry]);
+  }, [isNew, cardio, state.pristine, state.committedName, state.appliedKey, committedEntry]);
 
   useEffect(() => {
     if (!confirmDelete) return undefined;
@@ -85,7 +110,8 @@ function LiftForm({ mode, lift, prefill, onClose }) {
 
     if (Object.keys(errors).length) {
       setShowErrors(true);
-      toast.error(errors.name || errors.date || 'Check the highlighted sets');
+      if (cardio) toast.error(errors.date || (errors.cardio?.empty ? 'Enter a distance or a time' : 'Check the highlighted fields'));
+      else toast.error(errors.name || errors.date || 'Check the highlighted sets');
       if (errors.name) nameRef.current?.focus();
       return;
     }
@@ -93,10 +119,12 @@ function LiftForm({ mode, lift, prefill, onClose }) {
     setSaving(true);
     try {
       const payload = toPayload(state);
+      let result;
       if (isNew) {
         // liveEntry is the history from before this lift was saved
-        const previousBest = liveEntry?.best;
-        const saved = await createLift(payload);
+        const previousBest = !cardio && liveEntry?.best;
+        result = await createLift(payload);
+        const saved = result.lift;
         const top = topSet(saved.sets);
         if (previousBest && top && toKg(top) > previousBest.kg) {
           toast.success(`New PR on ${saved.name}!`, { icon: '🏆', duration: 5000 });
@@ -104,9 +132,10 @@ function LiftForm({ mode, lift, prefill, onClose }) {
           toast.success(`${saved.name} logged`);
         }
       } else {
-        await updateLift(lift._id, payload);
-        toast.success('Lift updated');
+        result = await updateLift(lift._id, payload);
+        toast.success(cardio ? `${cardioKind(state.kind).label} updated` : 'Lift updated');
       }
+      if (result.censored) toast('Some words were censored', { icon: '🤐' });
       onClose();
     } catch (error) {
       toast.error(error.message || 'Could not save lift');
@@ -122,7 +151,7 @@ function LiftForm({ mode, lift, prefill, onClose }) {
     setDeleting(true);
     try {
       await deleteLift(lift._id);
-      toast.success('Lift deleted');
+      toast.success(cardio ? `${cardioKind(state.kind).label} deleted` : 'Lift deleted');
       onClose();
     } catch (error) {
       toast.error(error.message || 'Could not delete lift');
@@ -159,7 +188,7 @@ function LiftForm({ mode, lift, prefill, onClose }) {
     <form ref={formRef} className="tk-modal-form" onSubmit={handleSubmit} onKeyDown={onFormKeyDown} noValidate>
       <Modal.Header className="tk-modal-header">
         <Modal.Title as="h2" id="lift-form-title" className="tk-modal-title">
-          {isNew ? 'Log a lift' : 'Edit lift'}
+          {isNew ? `Log a ${kindLabel}` : `Edit ${kindLabel}`}
         </Modal.Title>
         <button type="button" className="tk-icon-btn" onClick={onClose} aria-label="Close">
           <FontAwesomeIcon icon={faXmark} />
@@ -167,164 +196,180 @@ function LiftForm({ mode, lift, prefill, onClose }) {
       </Modal.Header>
 
       <Modal.Body className="tk-modal-body">
-        <div className="tk-field">
-          <label className="tk-label" htmlFor="lift-name">Exercise</label>
-          <LiftNameInput
-            ref={nameRef}
-            id="lift-name"
-            value={state.name}
-            recent={exercises}
-            invalid={!!shownErrors.name}
-            onChange={(value) => dispatch({ type: 'field', field: 'name', value })}
-            onCommit={(value) => dispatch({ type: 'commitName', value })}
-          />
-          {shownErrors.name && <div className="tk-field-error">{shownErrors.name}</div>}
-        </div>
-
-        {isNew && liveEntry && (
-          <LastSession
-            entry={liveEntry}
-            applied={state.appliedKey === normalizeName(state.name)}
-            onApply={() => dispatch({ type: 'applyHistory', entry: liveEntry, auto: false })}
-          />
+        {kindOptions && (
+          <KindPicker options={kindOptions} value={state.kind} onChange={(value) => dispatch({ type: 'kind', value })} />
         )}
 
-        <div className="tk-field-row">
-          <div className="tk-field">
-            <label className="tk-label" htmlFor="lift-date">Date</label>
-            <input
-              id="lift-date"
-              type="date"
-              className={cx('tk-input', shownErrors.date && 'is-invalid')}
-              value={state.date}
-              onChange={(e) => dispatch({ type: 'field', field: 'date', value: e.target.value })}
-            />
-          </div>
-          <div className="tk-field">
-            <span className="tk-label" id="lift-unit-label">Unit</span>
-            <div className="tk-segmented" role="group" aria-labelledby="lift-unit-label">
-              {METRICS.map((unit) => (
-                <button
-                  key={unit}
-                  type="button"
-                  aria-pressed={state.unit === unit}
-                  onClick={() => {
-                    dispatch({ type: 'unit', value: unit });
-                    setPreferredUnit(unit);
-                  }}
-                >
-                  {unit}
-                </button>
-              ))}
+        {cardio ? (
+          <CardioFields
+            state={state}
+            dispatch={dispatch}
+            errors={shownErrors}
+            last={isNew ? lastCardio.get(state.kind) : null}
+          />
+        ) : (
+          <>
+            <div className="tk-field">
+              <label className="tk-label" htmlFor="lift-name">Exercise</label>
+              <LiftNameInput
+                ref={nameRef}
+                id="lift-name"
+                value={state.name}
+                recent={exercises}
+                invalid={!!shownErrors.name}
+                onChange={(value) => dispatch({ type: 'field', field: 'name', value })}
+                onCommit={(value) => dispatch({ type: 'commitName', value })}
+              />
+              {shownErrors.name && <div className="tk-field-error">{shownErrors.name}</div>}
             </div>
-          </div>
-        </div>
 
-        <div className="tk-field-row">
-          <div className="tk-field">
-            <label className="tk-label" htmlFor="lift-sets">Sets</label>
-            <Stepper
-              id="lift-sets"
-              label="sets"
-              value={state.rows.length}
-              min={1}
-              max={MAX_SETS}
-              onChange={(value) => dispatch({ type: 'setCount', value })}
-            />
-          </div>
-          <div className="tk-field">
-            <label className="tk-label" htmlFor="lift-reps">Reps</label>
-            <Stepper
-              id="lift-reps"
-              label="reps"
-              value={Number(state.rep) || 0}
-              min={1}
-              max={999}
-              onChange={(value) => dispatch({ type: 'targetRep', value })}
-            />
-          </div>
-        </div>
+            {isNew && liveEntry && (
+              <LastSession
+                entry={liveEntry}
+                applied={state.appliedKey === normalizeName(state.name)}
+                onApply={() => dispatch({ type: 'applyHistory', entry: liveEntry, auto: false })}
+              />
+            )}
 
-        <div className="tk-set-editor">
-          <div className="tk-set-editor-head" aria-hidden="true">
-            <span>Set</span>
-            <span>Weight</span>
-            <span>Reps</span>
-            <span>RPE</span>
-            <span />
-          </div>
-          {state.rows.map((row, i) => {
-            const errorsForRow = rowErrors[row.id] || {};
-            return (
-              <div key={row.id} className="tk-set-editor-row">
-                <span className="tk-set-index">{i + 1}</span>
-                <div className="tk-unit-input">
-                  <input
-                    data-set-input
-                    className={cx('tk-input', errorsForRow.weight && 'is-invalid')}
-                    inputMode="decimal"
-                    enterKeyHint="next"
-                    autoComplete="off"
-                    placeholder="BW"
-                    aria-label={`Set ${i + 1} weight in ${state.unit}`}
-                    value={row.weight}
-                    onChange={onRowChange(i, 'weight', DECIMAL)}
-                    onFocus={selectOnFocus}
-                    onKeyDown={onSetKeyDown}
-                  />
-                  <span className="tk-unit-suffix" aria-hidden="true">{state.unit}</span>
-                </div>
+            <div className="tk-field-row">
+              <div className="tk-field">
+                <label className="tk-label" htmlFor="lift-date">Date</label>
                 <input
-                  data-set-input
-                  className={cx('tk-input', errorsForRow.rep && 'is-invalid')}
-                  inputMode="numeric"
-                  enterKeyHint="next"
-                  autoComplete="off"
-                  placeholder="0"
-                  aria-label={`Set ${i + 1} reps`}
-                  value={row.rep}
-                  onChange={onRowChange(i, 'rep', INTEGER)}
-                  onFocus={selectOnFocus}
-                  onKeyDown={onSetKeyDown}
+                  id="lift-date"
+                  type="date"
+                  className={cx('tk-input', shownErrors.date && 'is-invalid')}
+                  value={state.date}
+                  onChange={(e) => dispatch({ type: 'field', field: 'date', value: e.target.value })}
                 />
-                <input
-                  data-set-input
-                  className={cx('tk-input', errorsForRow.rpe && 'is-invalid')}
-                  inputMode="decimal"
-                  enterKeyHint="next"
-                  autoComplete="off"
-                  placeholder="–"
-                  aria-label={`Set ${i + 1} RPE`}
-                  value={row.rpe}
-                  onChange={onRowChange(i, 'rpe', DECIMAL)}
-                  onFocus={selectOnFocus}
-                  onKeyDown={onSetKeyDown}
-                />
-                <button
-                  type="button"
-                  className="tk-icon-btn tk-icon-btn-sm"
-                  aria-label={`Remove set ${i + 1}`}
-                  disabled={state.rows.length === 1}
-                  onClick={() => dispatch({ type: 'removeSet', index: i })}
-                >
-                  <FontAwesomeIcon icon={faXmark} />
-                </button>
               </div>
-            );
-          })}
-          {hasRowErrors && (
-            <div className="tk-field-error">Every set needs reps. RPE goes from 0 to 10.</div>
-          )}
-          <button
-            type="button"
-            className="tk-btn tk-btn-ghost tk-add-set"
-            disabled={state.rows.length >= MAX_SETS}
-            onClick={() => dispatch({ type: 'setCount', value: state.rows.length + 1 })}
-          >
-            <FontAwesomeIcon icon={faPlus} /> Add set
-          </button>
-          <p className="tk-hint">Leave weight blank for bodyweight. Edits carry down to the sets below until you change them.</p>
-        </div>
+              <div className="tk-field">
+                <span className="tk-label" id="lift-unit-label">Unit</span>
+                <div className="tk-segmented" role="group" aria-labelledby="lift-unit-label">
+                  {METRICS.map((unit) => (
+                    <button
+                      key={unit}
+                      type="button"
+                      aria-pressed={state.unit === unit}
+                      onClick={() => {
+                        dispatch({ type: 'unit', value: unit });
+                        setPreferredUnit(unit);
+                      }}
+                    >
+                      {unit}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="tk-field-row">
+              <div className="tk-field">
+                <label className="tk-label" htmlFor="lift-sets">Sets</label>
+                <Stepper
+                  id="lift-sets"
+                  label="sets"
+                  value={state.rows.length}
+                  min={1}
+                  max={MAX_SETS}
+                  onChange={(value) => dispatch({ type: 'setCount', value })}
+                />
+              </div>
+              <div className="tk-field">
+                <label className="tk-label" htmlFor="lift-reps">Reps</label>
+                <Stepper
+                  id="lift-reps"
+                  label="reps"
+                  value={Number(state.rep) || 0}
+                  min={1}
+                  max={999}
+                  onChange={(value) => dispatch({ type: 'targetRep', value })}
+                />
+              </div>
+            </div>
+
+            <div className="tk-set-editor">
+              <div className="tk-set-editor-head" aria-hidden="true">
+                <span>Set</span>
+                <span>Weight</span>
+                <span>Reps</span>
+                <span>RPE</span>
+                <span />
+              </div>
+              {state.rows.map((row, i) => {
+                const errorsForRow = rowErrors[row.id] || {};
+                return (
+                  <div key={row.id} className="tk-set-editor-row">
+                    <span className="tk-set-index">{i + 1}</span>
+                    <div className="tk-unit-input">
+                      <input
+                        data-set-input
+                        className={cx('tk-input', errorsForRow.weight && 'is-invalid')}
+                        inputMode="decimal"
+                        enterKeyHint="next"
+                        autoComplete="off"
+                        placeholder="BW"
+                        aria-label={`Set ${i + 1} weight in ${state.unit}`}
+                        value={row.weight}
+                        onChange={onRowChange(i, 'weight', DECIMAL)}
+                        onFocus={selectOnFocus}
+                        onKeyDown={onSetKeyDown}
+                      />
+                      <span className="tk-unit-suffix" aria-hidden="true">{state.unit}</span>
+                    </div>
+                    <input
+                      data-set-input
+                      className={cx('tk-input', errorsForRow.rep && 'is-invalid')}
+                      inputMode="numeric"
+                      enterKeyHint="next"
+                      autoComplete="off"
+                      placeholder="0"
+                      aria-label={`Set ${i + 1} reps`}
+                      value={row.rep}
+                      onChange={onRowChange(i, 'rep', INTEGER)}
+                      onFocus={selectOnFocus}
+                      onKeyDown={onSetKeyDown}
+                    />
+                    <input
+                      data-set-input
+                      className={cx('tk-input', errorsForRow.rpe && 'is-invalid')}
+                      inputMode="decimal"
+                      enterKeyHint="next"
+                      autoComplete="off"
+                      placeholder="–"
+                      aria-label={`Set ${i + 1} RPE`}
+                      value={row.rpe}
+                      onChange={onRowChange(i, 'rpe', DECIMAL)}
+                      onFocus={selectOnFocus}
+                      onKeyDown={onSetKeyDown}
+                    />
+                    <button
+                      type="button"
+                      className="tk-icon-btn tk-icon-btn-sm"
+                      aria-label={`Remove set ${i + 1}`}
+                      disabled={state.rows.length === 1}
+                      onClick={() => dispatch({ type: 'removeSet', index: i })}
+                    >
+                      <FontAwesomeIcon icon={faXmark} />
+                    </button>
+                  </div>
+                );
+              })}
+              {hasRowErrors && (
+                <div className="tk-field-error">Every set needs reps. RPE goes from 0 to 10.</div>
+              )}
+              <button
+                type="button"
+                className="tk-btn tk-btn-ghost tk-add-set"
+                disabled={state.rows.length >= MAX_SETS}
+                onClick={() => dispatch({ type: 'setCount', value: state.rows.length + 1 })}
+              >
+                <FontAwesomeIcon icon={faPlus} /> Add set
+              </button>
+              <p className="tk-hint">Leave weight blank for bodyweight. Edits carry down to the sets below until you change them.</p>
+            </div>
+          </>
+        )}
+
 
         <div className="tk-field">
           <label className="tk-label" htmlFor="lift-note">Notes</label>
@@ -333,7 +378,7 @@ function LiftForm({ mode, lift, prefill, onClose }) {
             className="tk-input"
             rows={2}
             maxLength={1000}
-            placeholder="Optional: cues, how it felt, equipment…"
+            placeholder={cardio ? 'Optional: route, weather, how it felt…' : 'Optional: cues, how it felt, equipment…'}
             value={state.note}
             onChange={(e) => dispatch({ type: 'field', field: 'note', value: e.target.value })}
           />
