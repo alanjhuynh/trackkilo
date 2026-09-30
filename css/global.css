@@ -2432,3 +2432,310 @@ input[type="date"].tk-input::-webkit-date-and-time-value {
 .tk-panel-grid + .tk-panel {
   margin-top: 12px;
 }
+
+/* ---------- Scope and tab switches ---------- */
+
+.tk-scope,
+.tk-tabs {
+  margin-bottom: 12px;
+}
+
+.tk-tabs {
+  margin-bottom: 16px;
+}
+
+.tk-scope button,
+.tk-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tk-tabs .tk-badge {
+  margin-left: 0;
+}
+
+.tk-rank-gap {
+  padding: 2px 0;
+  color: var(--tk-subtle);
+  text-align: center;
+  letter-spacing: 0.2em;
+}
+
+.tk-board-note {
+  margin-top: 12px;
+}
+
+.tk-callout-public {
+  margin: 12px 0;
+}
+
+.tk-callout-button {
+  width: 100%;
+  margin: 0 0 14px;
+  background: var(--tk-primary-soft);
+  border-color: rgba(59, 113, 159, 0.4);
+  font: inherit;
+  text-align: left;
+}
+
+.tk-callout-button:hover {
+  border-color: var(--tk-primary);
+}
+
+/* Checkbox styled as an on/off switch */
+.tk-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 50px;
+  height: 30px;
+  margin: 0;
+  border: 1px solid var(--tk-border-strong);
+  border-radius: 999px;
+  background: var(--tk-surface-3);
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.tk-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+
+.tk-switch:checked {
+  border-color: var(--tk-primary);
+  background: var(--tk-primary);
+}
+
+.tk-switch:checked::after {
+  transform: translateX(20px);
+}
+
+.tk-switch:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+label.tk-setting-name {
+  cursor: pointer;
+}
+
+/* ---------- Activity feed ---------- */
+
+.tk-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tk-workout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.tk-workout-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tk-workout-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tk-workout-entries li {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  align-items: center;
+}
+
+.tk-workout-entries .tk-kind-badge {
+  grid-row: span 2;
+}
+
+.tk-kind-badge-sm {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.tk-workout-entry-name {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tk-workout-entry-detail {
+  color: var(--tk-muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tk-workout-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--tk-border);
+}
+
+.tk-reaction {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--tk-border-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--tk-muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.tk-reaction:hover {
+  background: var(--tk-surface-2);
+  color: var(--tk-text);
+}
+
+.tk-reaction.is-liked {
+  border-color: rgba(255, 107, 129, 0.45);
+  background: rgba(255, 107, 129, 0.12);
+  color: #ff8497;
+}
+
+.tk-reaction.is-open {
+  border-color: var(--tk-primary);
+  color: var(--tk-text);
+}
+
+.tk-reaction-count {
+  color: var(--tk-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.tk-workout-likers {
+  margin: -4px 0 0;
+  color: var(--tk-muted);
+  font-size: 0.82rem;
+}
+
+.tk-comment-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--tk-text);
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.tk-comment-preview-line {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tk-comment-preview-more {
+  color: var(--tk-muted);
+  font-size: 0.85rem;
+}
+
+.tk-comments {
+  padding-top: 4px;
+}
+
+.tk-comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.tk-comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.tk-comment-body {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--tk-surface-2);
+}
+
+.tk-comment-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.tk-comment-head time {
+  color: var(--tk-subtle);
+  font-size: 0.75rem;
+}
+
+.tk-comment-text {
+  margin: 2px 0 0;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.tk-comment-form {
+  display: flex;
+  gap: 8px;
+}
+
+.tk-comment-form .tk-input {
+  flex: 1;
+  min-width: 0;
+  border-radius: 999px;
+  padding-inline: 16px;
+}
+
+.tk-comment-send {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--tk-primary);
+  color: #fff;
+}
+
+.tk-comment-send:disabled {
+  background: var(--tk-surface-3);
+  color: var(--tk-subtle);
+}

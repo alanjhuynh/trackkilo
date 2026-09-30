@@ -8,11 +8,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faCheck, faLink, faMagnifyingGlass, faShareNodes, faUserGroup, faUserPlus, faUserXmark, faXmark,
 } from '@fortawesome/free-solid-svg-icons';
+import ActivityFeed from '../components/ActivityFeed';
 import Avatar from '../components/Avatar';
 import ConfirmModal from '../components/ConfirmModal';
+import { RequestBadge } from '../components/Sidebar';
 import useFriends from '../lib/useFriends';
 import useProfile from '../lib/useProfile';
 import { fetcher, request } from '../lib/api';
+import { plural } from '../lib/format';
 
 const SEARCH_DELAY_MS = 250;
 
@@ -40,7 +43,8 @@ function Person({ user, meta, children }) {
 
 const Spinner = () => <span className="spinner-border spinner-border-sm" role="status" aria-label="Working" />;
 
-const Friends = () => {
+// Search, invites, requests and the friends list
+function FriendsManager() {
   const router = useRouter();
   const { profile } = useProfile();
   const { friends, incoming, outgoing, isLoading, mutate: mutateFriends } = useFriends();
@@ -145,15 +149,7 @@ const Friends = () => {
   };
 
   return (
-    <div className="tk-page tk-page-narrow">
-      <Head><title>Friends · trackkilo</title></Head>
-      <header className="tk-page-header">
-        <div>
-          <p className="tk-eyebrow">Compare progress on the leaderboard</p>
-          <h1 className="tk-page-title">Friends</h1>
-        </div>
-      </header>
-
+    <>
       <section className="tk-card tk-section" aria-labelledby="add-friend-title">
         <h2 id="add-friend-title" className="tk-section-title">Add a friend</h2>
         <div className="tk-search">
@@ -273,8 +269,74 @@ const Friends = () => {
           setRemoving(null);
         }}
       >
-        You won’t see each other on the leaderboard anymore. You can add them again later.
+        You won’t see each other’s workouts or be on each other’s leaderboard anymore. You can add them again later.
       </ConfirmModal>
+    </>
+  );
+}
+
+const TABS = [
+  { key: 'activity', label: 'Activity', eyebrow: 'What you and your friends have been up to' },
+  { key: 'friends', label: 'Friends', eyebrow: 'Add friends to see their workouts and compare progress' },
+];
+
+// Activity feed and friend management, as tabs (?tab=friends; invite links open Friends)
+const Friends = () => {
+  const router = useRouter();
+  const { friends, incoming } = useFriends();
+  const { tab: requested, add } = router.query;
+  const tabKey = TABS.some((t) => t.key === requested) ? requested : (add ? 'friends' : 'activity');
+  const tab = TABS.find((t) => t.key === tabKey);
+
+  const showTab = (key) => {
+    router.replace({ pathname: '/friends', query: key === 'activity' ? {} : { tab: key } }, undefined, { shallow: true });
+  };
+
+  return (
+    <div className="tk-page tk-page-narrow">
+      <Head><title>{tabKey === 'activity' ? 'Activity' : 'Friends'} · trackkilo</title></Head>
+      <header className="tk-page-header">
+        <div>
+          <p className="tk-eyebrow">{tab.eyebrow}</p>
+          <h1 className="tk-page-title">Friends</h1>
+        </div>
+      </header>
+
+      <div className="tk-segmented tk-tabs" role="tablist" aria-label="Friends">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            id={`tab-${t.key}`}
+            aria-selected={tabKey === t.key}
+            aria-pressed={tabKey === t.key}
+            aria-controls={`panel-${t.key}`}
+            onClick={() => showTab(t.key)}
+          >
+            {t.label}
+            {t.key === 'friends' && <RequestBadge count={incoming.length} />}
+          </button>
+        ))}
+      </div>
+
+      <div role="tabpanel" id={`panel-${tabKey}`} aria-labelledby={`tab-${tabKey}`}>
+        {tabKey === 'activity' ? (
+          <>
+            {incoming.length > 0 && (
+              <button type="button" className="tk-callout tk-callout-button" onClick={() => showTab('friends')}>
+                <span>
+                  <strong>{plural(incoming.length, 'friend request')}</strong> waiting for you
+                </span>
+                <span className="tk-link-btn">Review</span>
+              </button>
+            )}
+            <ActivityFeed hasFriends={friends.length > 0} onFindFriends={() => showTab('friends')} />
+          </>
+        ) : (
+          <FriendsManager />
+        )}
+      </div>
     </div>
   );
 };

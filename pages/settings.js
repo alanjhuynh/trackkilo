@@ -3,9 +3,10 @@ import Head from 'next/head';
 import { useSession, signOut } from 'next-auth/react';
 import toast from 'react-hot-toast';
 import moment from 'moment';
+import { mutate as mutateKey } from 'swr';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-  faFileArrowDown, faFileArrowUp, faRightFromBracket,
+  faFileArrowDown, faFileArrowUp, faLock, faRightFromBracket,
 } from '@fortawesome/free-solid-svg-icons';
 import Avatar from '../components/Avatar';
 import ImportModal from '../components/ImportModal';
@@ -101,6 +102,58 @@ function ProfileSection() {
           {saving ? <Spinner /> : 'Save profile'}
         </button>
       </form>
+    </section>
+  );
+}
+
+function PrivacySection() {
+  const { profile, mutate } = useProfile();
+  const [saving, setSaving] = useState(false);
+
+  const onToggle = async (e) => {
+    const publicLeaderboard = e.target.checked;
+    setSaving(true);
+    mutate({ ...profile, publicLeaderboard }, { revalidate: false });
+    try {
+      const { data } = await request('/api/profile', { method: 'PUT', body: { publicLeaderboard } });
+      mutate(data, { revalidate: false });
+      mutateKey((key) => typeof key === 'string' && key.startsWith('/api/leaderboard'));
+      toast.success(publicLeaderboard ? 'You’re on the public leaderboard' : 'You’re off the public leaderboard');
+    } catch (error) {
+      mutate();
+      toast.error(error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="tk-card tk-section" aria-labelledby="privacy-title">
+      <h2 id="privacy-title" className="tk-section-title">Privacy</h2>
+      <div className="tk-setting-row">
+        <div>
+          <label className="tk-setting-name" htmlFor="public-leaderboard">Show me on the public leaderboard</label>
+          <p className="tk-hint mt-1">
+            Anyone signed in can see your display name, username, photo and training totals there.
+          </p>
+        </div>
+        <input
+          id="public-leaderboard"
+          type="checkbox"
+          role="switch"
+          className="tk-switch"
+          checked={Boolean(profile?.publicLeaderboard)}
+          disabled={!profile || saving}
+          onChange={onToggle}
+        />
+      </div>
+      <div className="tk-setting-row">
+        <div>
+          <div className="tk-setting-name">Who sees your workouts</div>
+          <p className="tk-hint mt-1">Friends can see what you log, and like and comment on it. Your notes stay private.</p>
+        </div>
+        <span className="tk-pill"><FontAwesomeIcon icon={faLock} /> Friends only</span>
+      </div>
     </section>
   );
 }
@@ -253,6 +306,7 @@ const Settings = () => (
     </header>
 
     <ProfileSection />
+    <PrivacySection />
     <PreferencesSection />
     <DataSection />
 

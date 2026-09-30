@@ -3,6 +3,9 @@ import Profile from '../../models/Profile';
 import { getSession } from '../../lib/auth';
 import { cleanDisplayName, getOrCreateProfile, publicProfile, validateUsername } from '../../lib/profiles';
 
+// Your own profile, including private settings
+const ownProfile = (profile) => ({ ...publicProfile(profile), publicLeaderboard: Boolean(profile.publicLeaderboard) });
+
 export default async function handler(req, res) {
   const session = await getSession(req, res);
   if (!session) {
@@ -15,36 +18,52 @@ export default async function handler(req, res) {
     case 'GET':
       try {
         const profile = await getOrCreateProfile(session);
-        res.status(200).json({ success: true, data: publicProfile(profile) });
+        res.status(200).json({ success: true, data: ownProfile(profile) });
       } catch (error) {
         console.error('Failed to load profile', error);
         res.status(500).json({ success: false });
       }
       break;
 
+    // Updates any of username, displayName and publicLeaderboard
     case 'PUT': {
-      const { username, displayName } = req.body || {};
-      const nextUsername = typeof username === 'string' ? username.trim().replace(/^@/, '').toLowerCase() : '';
-      const usernameError = validateUsername(nextUsername);
-      if (usernameError) {
-        return res.status(400).json({ success: false, field: 'username', message: usernameError });
+      const { username, displayName, publicLeaderboard } = req.body || {};
+      const updates = {};
+      let censored = false;
+
+      if (username !== undefined) {
+        updates.username = typeof username === 'string' ? username.trim().replace(/^@/, '').toLowerCase() : '';
+        const usernameError = validateUsername(updates.username);
+        if (usernameError) {
+          return res.status(400).json({ success: false, field: 'username', message: usernameError });
+        }
       }
 
-      const cleanName = cleanDisplayName(displayName);
-      if (!cleanName.text) {
-        return res.status(400).json({ success: false, field: 'displayName', message: 'Enter a display name' });
+      if (displayName !== undefined) {
+        const cleanName = cleanDisplayName(displayName);
+        if (!cleanName.text) {
+          return res.status(400).json({ success: false, field: 'displayName', message: 'Enter a display name' });
+        }
+        updates.displayName = cleanName.text;
+        censored = cleanName.censored;
+      }
+
+      if (publicLeaderboard !== undefined) {
+        if (typeof publicLeaderboard !== 'boolean') {
+          return res.status(400).json({ success: false, field: 'publicLeaderboard', message: 'Invalid setting' });
+        }
+        updates.publicLeaderboard = publicLeaderboard;
       }
 
       try {
         const profile = await getOrCreateProfile(session);
-        if (nextUsername !== profile.username && await Profile.exists({ username: nextUsername })) {
+        if (updates.username && updates.username !== profile.username && await Profile.exists({ username: updates.username })) {
           return res.status(409).json({ success: false, field: 'username', message: 'That username is taken' });
         }
 
-        profile.username = nextUsername;
-        profile.displayName = cleanName.text;
+        Object.assign(profile, updates);
         await profile.save();
-        res.status(200).json({ success: true, data: publicProfile(profile), censored: cleanName.censored });
+        res.status(200).json({ success: true, data: ownProfile(profile), censored });
       } catch (error) {
         if (error?.code === 11000) {
           return res.status(409).json({ success: false, field: 'username', message: 'That username is taken' });

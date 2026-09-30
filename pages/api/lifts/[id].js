@@ -5,6 +5,7 @@ import Set from '../../../models/Set';
 import { getUserId } from '../../../lib/auth';
 import { parseLiftPayload, serializeLift } from '../../../lib/liftPayload';
 import { CARDIO_KEYS, STRENGTH_FILTER, isCardio } from '../../../lib/activities';
+import { removeReactionsIfEmpty } from '../../../lib/workouts';
 
 export default async function handler(req, res) {
   const userId = await getUserId(req, res);
@@ -29,6 +30,7 @@ export default async function handler(req, res) {
       try {
         // A lift can't become a run (or the other way round); runs, walks and rides can switch
         const sameKind = isCardio(parsed.lift) ? { kind: { $in: CARDIO_KEYS } } : STRENGTH_FILTER;
+        const previous = await Lift.findOne({ _id: id, userId }).select('date').lean();
         const lift = await Lift.findOneAndUpdate({ _id: id, userId, ...sameKind }, parsed.lift, {
           new: true,
           runValidators: true,
@@ -51,6 +53,8 @@ export default async function handler(req, res) {
           })));
         }
         await Set.deleteMany({ liftId: id, userId, index: { $gt: parsed.sets.length } });
+        // Moved to another day: the old day's likes and comments go if nothing's left there
+        if (previous.date.getTime() !== lift.date.getTime()) await removeReactionsIfEmpty(userId, previous.date);
 
         const sets = await Set.find({ liftId: id, userId }).lean();
         res.status(200).json({ success: true, data: serializeLift(lift, sets), censored: parsed.censored });
@@ -68,6 +72,7 @@ export default async function handler(req, res) {
           return res.status(404).json({ success: false, message: 'Lift not found' });
         }
         await Set.deleteMany({ liftId: id, userId });
+        await removeReactionsIfEmpty(userId, lift.date);
         res.status(200).json({ success: true, id });
       } catch (error) {
         console.error('Failed to delete lift', error);
