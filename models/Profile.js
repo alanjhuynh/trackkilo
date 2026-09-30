@@ -20,6 +20,13 @@ const ProfileSchema = new mongoose.Schema({
   image: {
     type: String
   },
+  // Opted in to the public leaderboard (friends always see each other)
+  publicLeaderboard: {
+    type: Boolean,
+    default: false
+  },
 }, { timestamps: true });
+
+ProfileSchema.index({ publicLeaderboard: 1 });
 
 export default mongoose.models.Profile || mongoose.model('Profile', ProfileSchema)
