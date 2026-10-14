@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Head from 'next/head';
 import { useSession } from 'next-auth/react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBolt, faDumbbell, faPlus } from '@fortawesome/free-solid-svg-icons';
+import {
+  faBolt, faCalendarDays, faDumbbell, faPlus,
+} from '@fortawesome/free-solid-svg-icons';
 import LiftCard from '../components/LiftCard';
 import { useLifts } from '../components/LiftProvider';
 import { useLiftForm } from '../components/LiftFormProvider';
@@ -11,9 +13,12 @@ import useProfile from '../lib/useProfile';
 import { dayKey, describeDay, plural } from '../lib/format';
 import { CARDIO_KINDS, isCardio } from '../lib/activities';
 import KindIcon from '../components/KindIcon';
+import TrainingCalendar from '../components/TrainingCalendar';
 
 const QUICK_LOG_COUNT = 8;
 const SKELETON_CARDS = 3;
+const HIGHLIGHT_MS = 2000;
+const CALENDAR_KEY = 'trackkilo:calendar';
 
 function greeting(name) {
   const hour = new Date().getHours();
@@ -55,10 +60,10 @@ function dayMeta(day) {
   return parts.join(' · ');
 }
 
-function DaySection({ day, prLiftIds }) {
+function DaySection({ day, prLiftIds, highlighted }) {
   const { label, detail } = describeDay(day.key);
   return (
-    <section className="tk-day" aria-labelledby={`day-${day.key}`}>
+    <section className={`tk-day${highlighted ? ' is-highlighted' : ''}`} aria-labelledby={`day-${day.key}`}>
       <header className="tk-day-header">
         <h2 id={`day-${day.key}`} className="tk-day-title">
           {label}
@@ -114,16 +119,69 @@ function EmptyState({ onAdd }) {
 const Index = () => {
   const { data: session } = useSession();
   const { profile } = useProfile();
-  const { lifts, hasMore, status, initialized, loadMore } = useLifts();
+  const {
+    lifts, hasMore, status, initialized, anchor, loadMore, reset, jumpTo,
+  } = useLifts();
   const { exercises, prLiftIds, recentCardio } = useExercises();
   const { openNew } = useLiftForm();
   const sentinelRef = useRef(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [target, setTarget] = useState(null); // day to scroll to once it's loaded
+  const [highlighted, setHighlighted] = useState(null);
 
   const days = useMemo(() => groupByDay(lifts), [lifts]);
 
   useEffect(() => {
     if (!initialized) loadMore();
   }, [initialized, loadMore]);
+
+  // Remember whether the calendar is open on small screens
+  useEffect(() => {
+    try {
+      setCalendarOpen(window.localStorage.getItem(CALENDAR_KEY) === 'open');
+    } catch (error) {
+      // Storage unavailable; start closed
+    }
+  }, []);
+
+  const toggleCalendar = () => {
+    setCalendarOpen((open) => {
+      try {
+        window.localStorage.setItem(CALENDAR_KEY, open ? 'closed' : 'open');
+      } catch (error) {
+        // Not remembered
+      }
+      return !open;
+    });
+  };
+
+  // From the calendar: scroll to the day if it's loaded, otherwise restart the log there
+  const goToDay = (day) => {
+    setTarget(day);
+    if (!document.getElementById(`day-${day}`)) jumpTo(day);
+  };
+
+  useEffect(() => {
+    if (!target) return;
+    const heading = document.getElementById(`day-${target}`);
+    if (!heading) return;
+    // After a jump the day is first, so show the "Back to today" bar above it too
+    const scrollTo = target === anchor ? document.querySelector('.tk-anchor-bar') : heading.closest('.tk-day');
+    scrollTo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setHighlighted(target);
+    setTarget(null);
+  }, [target, days, anchor]);
+
+  useEffect(() => {
+    if (!highlighted) return undefined;
+    const timer = setTimeout(() => setHighlighted(null), HIGHLIGHT_MS);
+    return () => clearTimeout(timer);
+  }, [highlighted]);
+
+  const backToLatest = () => {
+    reset();
+    window.scrollTo({ top: 0 });
+  };
 
   // Load the next page as the end of the list comes into view. Re-observing
   // after each load keeps loading while the list is shorter than the screen.
@@ -139,7 +197,7 @@ const Index = () => {
     return () => observer.disconnect();
   }, [initialized, hasMore, status, loadMore]);
 
-  const isEmpty = initialized && lifts.length === 0 && !hasMore;
+  const isEmpty = initialized && lifts.length === 0 && !hasMore && !anchor;
 
   return (
     <div className="tk-page">
@@ -152,6 +210,15 @@ const Index = () => {
           <p className="tk-eyebrow">{greeting(profile?.displayName || session?.user?.name)}</p>
           <h1 className="tk-page-title">Training log</h1>
         </div>
+        <button
+          type="button"
+          className={`tk-chip tk-calendar-toggle${calendarOpen ? ' active' : ''}`}
+          aria-expanded={calendarOpen}
+          aria-controls="log-calendar"
+          onClick={toggleCalendar}
+        >
+          <FontAwesomeIcon icon={faCalendarDays} className="tk-chip-icon" /> Calendar
+        </button>
       </header>
 
       {(exercises.length > 0 || recentCardio.length > 0) && (
@@ -186,32 +253,53 @@ const Index = () => {
         </section>
       )}
 
-      {!initialized && <FeedSkeleton />}
-      {isEmpty && <EmptyState onAdd={() => openNew()} />}
-      {days.map((day) => (
-        <DaySection
-          key={day.key}
-          day={day}
-          prLiftIds={prLiftIds}
-        />
-      ))}
+      <div className="tk-log-layout">
+        {/* Always shown beside the log on wide screens; toggled on smaller ones */}
+        <aside id="log-calendar" className={`tk-log-calendar${calendarOpen ? ' is-open' : ''}`}>
+          <TrainingCalendar
+            selected={highlighted || anchor}
+            onSelectDay={goToDay}
+            onLogDay={(day) => openNew({ date: day })}
+          />
+        </aside>
 
-      {initialized && hasMore && status !== 'error' && (
-        <div ref={sentinelRef} className="tk-feed-status">
-          {status === 'loading' && (
-            <span className="spinner-border spinner-border-sm" role="status" aria-label="Loading more lifts" />
+        <div className="tk-log-main">
+          {anchor && (
+            <div className="tk-anchor-bar" role="status">
+              <span>Showing {describeDay(anchor).detail || describeDay(anchor).label} and earlier</span>
+              <button type="button" className="tk-btn tk-btn-sm tk-btn-soft" onClick={backToLatest}>Back to today</button>
+            </div>
+          )}
+
+          {!initialized && <FeedSkeleton />}
+          {isEmpty && <EmptyState onAdd={() => openNew()} />}
+          {days.map((day) => (
+            <DaySection
+              key={day.key}
+              day={day}
+              prLiftIds={prLiftIds}
+              highlighted={highlighted === day.key}
+            />
+          ))}
+
+          {initialized && hasMore && status !== 'error' && (
+            <div ref={sentinelRef} className="tk-feed-status">
+              {status === 'loading' && (
+                <span className="spinner-border spinner-border-sm" role="status" aria-label="Loading more lifts" />
+              )}
+            </div>
+          )}
+          {status === 'error' && (
+            <div className="tk-feed-status" role="alert">
+              <p className="mb-0">Couldn&apos;t load your log.</p>
+              <button type="button" className="tk-btn tk-btn-secondary" onClick={loadMore}>Try again</button>
+            </div>
+          )}
+          {initialized && !hasMore && lifts.length > 0 && (
+            <p className="tk-feed-end">That&apos;s everything. You&apos;ve reached your first workout.</p>
           )}
         </div>
-      )}
-      {status === 'error' && (
-        <div className="tk-feed-status" role="alert">
-          <p className="mb-0">Couldn&apos;t load your log.</p>
-          <button type="button" className="tk-btn tk-btn-secondary" onClick={loadMore}>Try again</button>
-        </div>
-      )}
-      {initialized && !hasMore && lifts.length > 0 && (
-        <p className="tk-feed-end">That&apos;s everything. You&apos;ve reached your first workout.</p>
-      )}
+      </div>
     </div>
   );
 };

@@ -1,7 +1,9 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
+import moment from 'moment';
 import { request, revalidateSummaries } from '../lib/api';
 
 const PAGE_SIZE = 20;
+const LAST_ID = 'f'.repeat(24); // sorts after every real id
 
 const LiftContext = createContext(null);
 
@@ -19,6 +21,8 @@ function LiftProvider({ children }) {
   const [hasMore, setHasMore] = useState(true);
   const [status, setStatus] = useState('idle'); // idle | loading | error
   const [initialized, setInitialized] = useState(false);
+  // The calendar day the log was jumped to, or null when showing the newest lifts
+  const [anchor, setAnchor] = useState(null);
   const cursor = useRef(null);
   const moreRef = useRef(true);
   const inFlight = useRef(false);
@@ -70,18 +74,32 @@ function LiftProvider({ children }) {
     }
   }, []);
 
-  // Forget loaded lifts so the log refetches, e.g. after an import
-  const reset = useCallback(() => {
+  // Forget loaded lifts so the log refetches, optionally starting from `startCursor`
+  const restart = useCallback((startCursor) => {
     generation.current += 1;
     inFlight.current = false;
-    cursor.current = null;
+    cursor.current = startCursor;
     moreRef.current = true;
     setLifts([]);
     setHasMore(true);
     setStatus('idle');
     setInitialized(false);
-    revalidateSummaries();
   }, []);
+
+  // Back to the newest lifts, e.g. after an import
+  const reset = useCallback(() => {
+    restart(null);
+    setAnchor(null);
+    revalidateSummaries();
+  }, [restart]);
+
+  // Start the log at a calendar day ("YYYY-MM-DD"), with older days below it.
+  // The cursor sits at the day's last millisecond, so the page begins with that day.
+  const jumpTo = useCallback((day) => {
+    const endOfDay = moment(day, 'YYYY-MM-DD').add(1, 'day').valueOf() - 1;
+    restart({ date: new Date(endOfDay).toISOString(), _id: LAST_ID });
+    setAnchor(day);
+  }, [restart]);
 
   // Resolves to { lift, censored }; `censored` means bad words were masked
   const createLift = useCallback(async (payload) => {
@@ -105,8 +123,8 @@ function LiftProvider({ children }) {
   }, []);
 
   const value = useMemo(() => ({
-    lifts, hasMore, status, initialized, loadMore, reset, createLift, updateLift, deleteLift,
-  }), [lifts, hasMore, status, initialized, loadMore, reset, createLift, updateLift, deleteLift]);
+    lifts, hasMore, status, initialized, anchor, loadMore, reset, jumpTo, createLift, updateLift, deleteLift,
+  }), [lifts, hasMore, status, initialized, anchor, loadMore, reset, jumpTo, createLift, updateLift, deleteLift]);
 
   return <LiftContext.Provider value={value}>{children}</LiftContext.Provider>;
 }
