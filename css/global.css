@@ -2739,3 +2739,210 @@ label.tk-setting-name {
   background: var(--tk-surface-3);
   color: var(--tk-subtle);
 }
+
+/* ---------- Calendar ---------- */
+
+.tk-kind-lift {
+  --tk-kind: var(--tk-primary-text);
+}
+
+.tk-log-calendar {
+  display: none;
+  margin-bottom: 20px;
+}
+
+.tk-log-calendar.is-open {
+  display: block;
+}
+
+.tk-log-main {
+  min-width: 0;
+}
+
+/* Wide screens: the calendar sits beside the log and stays in view */
+@media (min-width: 1200px) {
+  .tk-log-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 28px;
+    align-items: start;
+  }
+
+  .tk-log-main {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .tk-log-calendar {
+    position: sticky;
+    top: calc(var(--tk-nav-h) + 16px);
+    display: block;
+    grid-column: 2;
+    grid-row: 1;
+    margin: 12px 0 0;
+  }
+
+  .tk-calendar-toggle {
+    display: none;
+  }
+}
+
+.tk-calendar {
+  padding: 14px;
+}
+
+.tk-calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.tk-calendar-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.tk-calendar-grid {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 2px;
+  table-layout: fixed;
+  transition: opacity 0.15s;
+}
+
+.tk-calendar-grid.is-loading {
+  opacity: 0.6;
+}
+
+.tk-calendar-grid th {
+  padding: 4px 0;
+  color: var(--tk-subtle);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.tk-calendar-grid td {
+  padding: 0;
+}
+
+.tk-calendar-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  height: 44px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--tk-muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.tk-calendar-day:hover:not(:disabled) {
+  background: var(--tk-surface-3);
+  color: var(--tk-text);
+}
+
+.tk-calendar-day.has-entries {
+  background: var(--tk-surface-2);
+  color: var(--tk-text);
+  font-weight: 700;
+}
+
+.tk-calendar-day.is-outside {
+  opacity: 0.45;
+}
+
+.tk-calendar-day.is-today {
+  border-color: var(--tk-primary);
+}
+
+.tk-calendar-day.is-selected {
+  border-color: var(--tk-primary-text);
+  background: var(--tk-primary-soft);
+}
+
+.tk-calendar-day:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.tk-calendar-dots {
+  display: flex;
+  gap: 3px;
+  height: 6px;
+}
+
+.tk-calendar-dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tk-kind, var(--tk-primary-text));
+}
+
+.tk-calendar-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
+  color: var(--tk-muted);
+  font-size: 0.82rem;
+}
+
+.tk-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 8px 0 0;
+  padding: 0;
+  color: var(--tk-subtle);
+  font-size: 0.75rem;
+  list-style: none;
+}
+
+.tk-calendar-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tk-anchor-bar {
+  scroll-margin-top: calc(var(--tk-nav-h) + var(--tk-safe-top) + 12px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 8px;
+  padding: 8px 8px 8px 14px;
+  border: 1px solid rgba(59, 113, 159, 0.35);
+  border-radius: var(--tk-radius);
+  background: var(--tk-primary-soft);
+  font-size: 0.9rem;
+}
+
+/* Days scrolled to from the calendar land below the sticky navbar, then flash */
+.tk-day {
+  scroll-margin-top: calc(var(--tk-nav-h) + var(--tk-safe-top));
+}
+
+.tk-day.is-highlighted .tk-lift-card {
+  animation: tk-flash 2s ease;
+}
+
+@keyframes tk-flash {
+  0%, 50% {
+    border-color: var(--tk-primary-text);
+    box-shadow: 0 0 0 3px var(--tk-primary-soft);
+  }
+}
