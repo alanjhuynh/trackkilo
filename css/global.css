@@ -1149,7 +1149,7 @@ input[type="date"].tk-input::-webkit-date-and-time-value {
   outline: none;
 }
 
-/* Set rows: # | weight | reps | RPE | remove */
+/* Set rows: drag handle + # | weight | reps | RPE | remove */
 .tk-set-editor {
   margin: 4px 0 20px;
 }
@@ -1157,7 +1157,7 @@ input[type="date"].tk-input::-webkit-date-and-time-value {
 .tk-set-editor-head,
 .tk-set-editor-row {
   display: grid;
-  grid-template-columns: 28px minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 0.85fr) 32px;
+  grid-template-columns: 44px minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 0.85fr) 32px;
   align-items: center;
   gap: 8px;
 }
@@ -1173,7 +1173,65 @@ input[type="date"].tk-input::-webkit-date-and-time-value {
 }
 
 .tk-set-editor-row {
+  position: relative;
   margin-bottom: 8px;
+  border-radius: var(--tk-radius-sm);
+}
+
+/* Rows slide out of the way only while a set is being dragged; the drop itself snaps */
+.tk-set-editor.is-sorting .tk-set-editor-row {
+  transition: transform 0.15s ease;
+}
+
+.tk-set-editor.is-sorting .tk-set-editor-row.is-dragging {
+  z-index: 1;
+  background: var(--tk-surface-3);
+  box-shadow: 0 0 0 4px var(--tk-surface-3), var(--tk-shadow-pop);
+  transition: none;
+}
+
+.tk-set-editor-row.is-dragging .tk-set-index {
+  background: var(--tk-primary);
+  color: #fff;
+}
+
+.tk-set-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--tk-radius-sm);
+  background: none;
+  color: var(--tk-subtle);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tk-set-handle:disabled {
+  cursor: default;
+}
+
+.tk-set-handle:disabled .tk-set-grip {
+  visibility: hidden;
+}
+
+.tk-set-handle:focus-visible {
+  outline: 2px solid var(--tk-primary);
+  outline-offset: 1px;
+}
+
+.tk-set-editor.is-sorting,
+.tk-set-editor.is-sorting .tk-set-handle {
+  cursor: grabbing;
+}
+
+.tk-set-grip {
+  font-size: 0.75rem;
 }
 
 .tk-set-editor-row .tk-input {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import Modal from 'react-bootstrap/Modal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faClockRotateLeft, faPlus, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faClockRotateLeft, faGripVertical, faPlus, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
 import toast from 'react-hot-toast';
 import CardioFields from './CardioFields';
 import KindIcon from './KindIcon';
@@ -9,6 +9,7 @@ import LiftNameInput from './LiftNameInput';
 import Stepper from './Stepper';
 import { useLifts } from './LiftProvider';
 import useExercises from '../lib/useExercises';
+import useRowDrag from '../lib/useRowDrag';
 import { initFormState, liftFormReducer, toPayload, validateForm } from '../lib/liftForm';
 import { dayLabel, formatWeight, normalizeName, summarizeSets } from '../lib/format';
 import { getPreferredDistanceUnit, getPreferredUnit, setPreferredUnit } from '../lib/prefs';
@@ -79,6 +80,11 @@ function LiftForm({ mode, lift, prefill, onClose }) {
   const [showErrors, setShowErrors] = useState(false);
   const formRef = useRef(null);
   const nameRef = useRef(null);
+  const focusHandleId = useRef(null);
+  const setDrag = useRowDrag({
+    count: state.rows.length,
+    onMove: (from, to) => dispatch({ type: 'moveSet', from, to }),
+  });
 
   const errors = useMemo(() => validateForm(state), [state]);
   const shownErrors = showErrors ? errors : {};
@@ -97,6 +103,13 @@ function LiftForm({ mode, lift, prefill, onClose }) {
     if (committedEntry) dispatch({ type: 'applyHistory', entry: committedEntry, auto: true });
     else if (state.appliedKey) dispatch({ type: 'resetDefaults' });
   }, [isNew, cardio, state.pristine, state.committedName, state.appliedKey, committedEntry]);
+
+  // Moving a row can blur its handle, so put focus back after an arrow-key move
+  useEffect(() => {
+    if (focusHandleId.current === null) return;
+    formRef.current?.querySelector(`[data-drag-handle="${focusHandleId.current}"]`)?.focus();
+    focusHandleId.current = null;
+  }, [state.rows]);
 
   useEffect(() => {
     if (!confirmDelete) return undefined;
@@ -174,6 +187,15 @@ function LiftForm({ mode, lift, prefill, onClose }) {
       e.preventDefault();
       next.focus();
     }
+  };
+
+  const onHandleKeyDown = (index, id) => (e) => {
+    const to = { ArrowUp: index - 1, ArrowDown: index + 1 }[e.key];
+    if (to === undefined) return;
+    e.preventDefault();
+    if (to < 0 || to >= state.rows.length) return;
+    focusHandleId.current = id;
+    dispatch({ type: 'moveSet', from: index, to });
   };
 
   const onFormKeyDown = (e) => {
@@ -287,7 +309,7 @@ function LiftForm({ mode, lift, prefill, onClose }) {
               </div>
             </div>
 
-            <div className="tk-set-editor">
+            <div className={cx('tk-set-editor', setDrag.dragging !== null && 'is-sorting')}>
               <div className="tk-set-editor-head" aria-hidden="true">
                 <span>Set</span>
                 <span>Weight</span>
@@ -298,8 +320,25 @@ function LiftForm({ mode, lift, prefill, onClose }) {
               {state.rows.map((row, i) => {
                 const errorsForRow = rowErrors[row.id] || {};
                 return (
-                  <div key={row.id} className="tk-set-editor-row">
-                    <span className="tk-set-index">{i + 1}</span>
+                  <div
+                    key={row.id}
+                    data-drag-row
+                    className={cx('tk-set-editor-row', setDrag.dragging === i && 'is-dragging')}
+                    style={setDrag.rowStyle(i)}
+                  >
+                    <button
+                      type="button"
+                      data-drag-handle={row.id}
+                      className="tk-set-handle"
+                      aria-label={`Set ${i + 1}. Drag or use the arrow keys to reorder`}
+                      title="Drag to reorder"
+                      disabled={state.rows.length === 1}
+                      onKeyDown={onHandleKeyDown(i, row.id)}
+                      {...setDrag.handleProps(i)}
+                    >
+                      <FontAwesomeIcon icon={faGripVertical} className="tk-set-grip" />
+                      <span className="tk-set-index">{i + 1}</span>
+                    </button>
                     <div className="tk-unit-input">
                       <input
                         data-set-input
@@ -365,7 +404,7 @@ function LiftForm({ mode, lift, prefill, onClose }) {
               >
                 <FontAwesomeIcon icon={faPlus} /> Add set
               </button>
-              <p className="tk-hint">Leave weight blank for bodyweight. Edits carry down to the sets below until you change them.</p>
+              <p className="tk-hint">Leave weight blank for bodyweight. Edits carry down to the sets below until you change them. Drag a set by its number to reorder.</p>
             </div>
           </>
         )}
