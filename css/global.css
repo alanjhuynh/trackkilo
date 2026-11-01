@@ -448,6 +448,43 @@ kbd {
   transform: translateY(-16px) scale(0.95);
 }
 
+.tk-to-top {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--tk-bottom-nav-h) + var(--tk-safe-bottom) + 16px);
+  z-index: 1020;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--tk-border-strong);
+  border-radius: 50%;
+  background: var(--tk-surface-2);
+  color: var(--tk-text);
+  box-shadow: var(--tk-shadow-pop);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity 0.2s, transform 0.2s, background-color 0.15s;
+}
+
+.tk-to-top.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+.tk-to-top:hover {
+  background: var(--tk-surface-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tk-to-top {
+    transition: none;
+  }
+}
+
 @media (min-width: 768px) {
   .tk-navbar {
     padding-inline: 24px;
@@ -471,6 +508,11 @@ kbd {
 
   .tk-bottom-nav {
     display: none;
+  }
+
+  .tk-to-top {
+    right: 28px;
+    bottom: 28px;
   }
 }
 

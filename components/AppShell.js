@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import Navbar, { Brand } from './Navbar';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
+import ScrollToTop from './ScrollToTop';
 import { LiftProvider } from './LiftProvider';
 import { LiftFormProvider } from './LiftFormProvider';
 
@@ -38,6 +39,7 @@ export default function AppShell({ children }) {
           <main className="tk-main">{children}</main>
         </div>
         <BottomNav />
+        <ScrollToTop />
       </LiftFormProvider>
     </LiftProvider>
   );
